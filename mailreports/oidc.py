@@ -44,7 +44,8 @@ FAILED = N_("Die Anmeldung beim Anbieter ist fehlgeschlagen. Bitte erneut versuc
 EXPIRED = N_("Die Anmeldung ist abgelaufen. Bitte erneut anmelden.")
 NO_ACCOUNT = N_("Für diese Anmeldung besteht kein Konto. Ein Konto kann über die Administration angelegt werden.")
 DISABLED = N_("Dieses Konto ist deaktiviert.")
-MESSAGES = (FAILED, EXPIRED, NO_ACCOUNT, DISABLED)
+TAKEN = N_("Diese Anmeldung beim Anbieter ist bereits mit einem anderen Konto verknüpft.")
+MESSAGES = (FAILED, EXPIRED, NO_ACCOUNT, DISABLED, TAKEN)
 
 
 def public_message(exc: OidcError) -> str:
@@ -97,14 +98,17 @@ def _pkce() -> tuple[str, str]:
     return verifier, challenge
 
 
-def start_flow(conn: sqlite3.Connection, cfg: Settings, base_url: str, next_url: str) -> tuple[str, str]:
-    """Creates a sign-in. Returns (address at the provider, state)."""
+def start_flow(conn: sqlite3.Connection, cfg: Settings, base_url: str, next_url: str,
+               link_user_id: int | None = None) -> tuple[str, str]:
+    """Creates a sign-in (or, with link_user_id, links the provider account to that user).
+    Returns (address at the provider, state)."""
     doc = discovery(cfg.oidc_issuer)
     state, nonce = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
     verifier, challenge = _pkce()
     conn.execute("DELETE FROM oidc_flows WHERE expires_at < ?", (now(),))
-    conn.execute("INSERT INTO oidc_flows (state_hash, nonce, verifier, next, expires_at) VALUES (?, ?, ?, ?, ?)",
-                 (token_hash(state), nonce, verifier, next_url, now() + FLOW_SECONDS))
+    conn.execute("INSERT INTO oidc_flows (state_hash, nonce, verifier, next, link_user_id, expires_at)"
+                 " VALUES (?, ?, ?, ?, ?, ?)",
+                 (token_hash(state), nonce, verifier, next_url, link_user_id, now() + FLOW_SECONDS))
     params = {"response_type": "code", "client_id": cfg.oidc_client_id, "redirect_uri": redirect_uri(cfg, base_url),
               "scope": SCOPES, "state": state, "nonce": nonce, "code_challenge": challenge,
               "code_challenge_method": "S256"}
@@ -190,7 +194,7 @@ def user_for(conn: sqlite3.Connection, cfg: Settings, who: Person) -> sqlite3.Ro
         user_id = create_user(conn, _free_username(conn, who.username), secrets.token_urlsafe(32),
                               display_name=who.name, email=who.email)
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        log.warning("User %s created from single sign-on", row["username"])
+        log.info("User %s created from single sign-on", row["username"])
     if not row["enabled"]:
         raise OidcError(DISABLED)
     updates: dict[str, Any] = {"oidc_sub": who.sub}
@@ -204,6 +208,16 @@ def user_for(conn: sqlite3.Connection, cfg: Settings, who: Person) -> sqlite3.Ro
     sets = ", ".join(f"{k} = ?" for k in updates)
     conn.execute(f"UPDATE users SET {sets} WHERE id = ?", (*updates.values(), row["id"]))
     return conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+
+
+def link(conn: sqlite3.Connection, cfg: Settings, user_id: int, who: Person) -> None:
+    """Links the provider account to an existing, signed-in user."""
+    other = conn.execute("SELECT id FROM users WHERE oidc_sub = ? AND id != ?", (who.sub, user_id)).fetchone()
+    if other is not None:
+        raise OidcError(TAKEN)
+    conn.execute("UPDATE users SET oidc_sub = ? WHERE id = ?", (who.sub, user_id))
+    if cfg.oidc_admin_group and cfg.oidc_admin_group in who.groups:
+        conn.execute("UPDATE users SET is_admin = 1 WHERE id = ?", (user_id,))
 
 
 def _free_username(conn: sqlite3.Connection, wanted: str) -> str:

@@ -7,6 +7,7 @@ import ipaddress
 import logging
 import math
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -25,6 +26,21 @@ from .sources import classify
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper(),
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("mailreports")
+
+_SECRET_PARAMS = re.compile(r"([?&](?:code|state|token)=)[^&\s]*")
+
+
+class _MaskSecrets(logging.Filter):
+    """Keeps authorization codes and state values of single sign-on out of the access log."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(_SECRET_PARAMS.sub(lambda m: m.group(1) + "***", a) if isinstance(a, str) else a
+                                for a in record.args)
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(_MaskSecrets())
 
 MAX_UPLOAD = 20 * 1024 * 1024
 # Reachable without a session (built-in accounts)

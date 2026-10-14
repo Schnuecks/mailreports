@@ -191,6 +191,7 @@ CREATE TABLE IF NOT EXISTS oidc_flows (
     nonce TEXT NOT NULL,
     verifier TEXT NOT NULL,
     next TEXT NOT NULL,
+    link_user_id INTEGER,
     expires_at INTEGER NOT NULL
 );
 
@@ -221,6 +222,9 @@ class Database:
         with self.connect() as con:
             con.executescript(SCHEMA)
             con.execute("INSERT OR IGNORE INTO meta VALUES ('schema', ?)", (str(SCHEMA_VERSION),))
+            # Columns added after a table first appeared (test build 0.2.0-rc.1)
+            if "link_user_id" not in {r[1] for r in con.execute("PRAGMA table_info(oidc_flows)")}:
+                con.execute("ALTER TABLE oidc_flows ADD COLUMN link_user_id INTEGER")
 
     @contextmanager
     def connect(self):

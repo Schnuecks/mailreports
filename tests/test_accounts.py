@@ -349,3 +349,42 @@ def test_user_list_shows_second_factor_only_when_set_up(two_users):
     client.post("/account/2fa/start", data={"csrf": csrf_of(client)})   # started, not confirmed
     row = re.search(r'>admin</a>.*?</tr>', client.get("/users").text, re.S).group(0)
     assert "aktiv" not in row
+
+
+def test_link_existing_account_with_sso(tmp_path, provider):
+    client, svc = app_client(tmp_path, admin_password=ADMIN_PW, oidc_issuer=ISSUER, oidc_client_id="mailreports",
+                             oidc_create_users=True)
+    provider.who.update({"preferred_username": "auth-admin", "sub": "u-7"})
+    login(client, "admin", ADMIN_PW)
+    assert "Mit SSO verknüpfen" in client.get("/account").text
+    r = client.post("/account/oidc/link", data={"csrf": csrf_of(client)}, follow_redirects=False)
+    r = client.get(provider.authorize(r.headers["location"]), follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/account?ok=linked"
+    client.post("/logout", data={"csrf": csrf_of(client)})
+    sso(client, provider)                         # signs in to the linked account, no new one
+    with svc.db.connect() as con:
+        assert [r[0] for r in con.execute("SELECT username FROM users")] == ["admin"]
+    client.post("/account/oidc/unlink", data={"csrf": csrf_of(client)})
+    with svc.db.connect() as con:
+        assert con.execute("SELECT oidc_sub FROM users").fetchone()[0] == ""
+
+
+def test_link_refused_when_taken(tmp_path, provider):
+    client, svc = app_client(tmp_path, admin_password=ADMIN_PW, oidc_issuer=ISSUER, oidc_client_id="mailreports")
+    with svc.db.connect() as con:
+        accounts.create_user(con, "other", USER_PW)
+        con.execute("UPDATE users SET oidc_sub = 'u-1' WHERE username = 'other'")
+    login(client, "admin", ADMIN_PW)
+    r = client.post("/account/oidc/link", data={"csrf": csrf_of(client)}, follow_redirects=False)
+    r = client.get(provider.authorize(r.headers["location"]))
+    assert r.status_code == 400 and "bereits mit einem anderen Konto" in r.text
+
+
+def test_access_log_hides_codes():
+    import logging
+
+    from mailreports import main as main_module
+    rec = logging.LogRecord("uvicorn.access", logging.INFO, "", 0, '%s - "%s %s"', (
+        "1.2.3.4", "GET", "/oidc/callback?code=authelia_ac_secret&state=abc&iss=x"), None)
+    main_module._MaskSecrets().filter(rec)
+    assert "secret" not in rec.getMessage() and "abc" not in rec.getMessage() and "iss=x" in rec.getMessage()

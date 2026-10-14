@@ -12,6 +12,10 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
 - **Passkeys and security keys** (WebAuthn): sign-in without a password or as second factor
 - **Single sign-on** through an OpenID Connect provider (`OIDC_ISSUER`, `OIDC_CLIENT_ID`,
   `OIDC_CLIENT_SECRET`), with admin and allowed groups and optional account creation
+- Existing accounts can be linked with the single sign-on provider on the account page
+  ("Link with …"), so signing in there leads to the same account; the link can be removed
+  again
+- Authorization codes and state values of single sign-on are masked in the access log
 - Account page with password change and active sessions; user management and sign-in log
   for administrators; account commands on the command line (`create-user`, `set-password`,
   `reset-2fa`, `list-users`, `setup-code`)

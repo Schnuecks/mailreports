@@ -269,6 +269,8 @@ def oidc_callback(request: Request, state: str = "", code: str = "", error: str 
         flow = oidc.take_flow(con, state)
     if flow is None:
         return _login_page(request, "/", _(oidc.EXPIRED), 401)
+    if flow["link_user_id"] is not None:
+        return _oidc_link_callback(request, flow, code, error)
     try:
         if error or not code:
             raise oidc.OidcError(oidc.FAILED)
@@ -283,6 +285,53 @@ def oidc_callback(request: Request, state: str = "", code: str = "", error: str 
         return _login_page(request, "/", _(oidc.public_message(exc)), 401)
     resp.delete_cookie(OIDC_COOKIE)
     return resp
+
+
+def _oidc_link_callback(request: Request, flow, code: str, error: str) -> Response:
+    """Return from the provider after "link with …" on the account page."""
+    me = web.account(request)
+    if me is None or me["id"] != flow["link_user_id"]:
+        return _login_page(request, "/", _(oidc.EXPIRED), 401)
+    try:
+        if error or not code:
+            raise oidc.OidcError(oidc.FAILED)
+        who = oidc.person(oidc.exchange(_cfg(request), str(request.base_url), flow, code))
+        with _svc(request).db.connect() as con:
+            oidc.link(con, _cfg(request), me["id"], who)
+    except oidc.OidcError as exc:
+        resp = _account_page(request, _(oidc.public_message(exc)), 400)
+        resp.delete_cookie(OIDC_COOKIE)
+        return resp
+    resp = redirect("/account", "linked")
+    resp.delete_cookie(OIDC_COOKIE)
+    return resp
+
+
+@router.post("/account/oidc/link")
+def oidc_link_start(request: Request, csrf: str = Form("")):
+    _require_accounts(request)
+    _require_csrf(request, csrf)
+    cfg, me = _cfg(request), _me(request)
+    if not cfg.oidc_enabled:
+        return redirect("/account")
+    try:
+        with _svc(request).db.connect() as con:
+            url, state = oidc.start_flow(con, cfg, str(request.base_url), "/account", link_user_id=me["id"])
+    except oidc.OidcError as exc:
+        return _account_page(request, _(oidc.public_message(exc)), 502)
+    resp = RedirectResponse(url, status_code=303)
+    resp.set_cookie(OIDC_COOKIE, state, max_age=oidc.FLOW_SECONDS, httponly=True,
+                    secure=web.cookie_secure(request, cfg), samesite="lax")
+    return resp
+
+
+@router.post("/account/oidc/unlink")
+def oidc_unlink(request: Request, csrf: str = Form("")):
+    _require_accounts(request)
+    _require_csrf(request, csrf)
+    with _svc(request).db.connect() as con:
+        con.execute("UPDATE users SET oidc_sub = '' WHERE id = ?", (_me(request)["id"],))
+    return redirect("/account", "unlinked")
 
 
 @router.post("/logout")
@@ -312,6 +361,8 @@ MESSAGES = {
     "user_new": N_("Das Konto wurde angelegt."),
     "user_deleted": N_("Das Konto wurde gelöscht."),
     "reset": N_("Zwei-Faktor-Anmeldung und Passkeys wurden zurückgesetzt."),
+    "linked": N_("Das Konto ist jetzt mit dem Anbieter verknüpft."),
+    "unlinked": N_("Die Verknüpfung mit dem Anbieter wurde gelöst."),
 }
 
 

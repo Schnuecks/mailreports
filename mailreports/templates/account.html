@@ -52,6 +52,19 @@
      data-cancelled="{{ _('Abgebrochen oder auf diesem Gerät nicht möglich.') }}"></p>
 </section>
 
+{% if sso_name %}
+<section class="card">
+  <h2>{{ _("Single Sign-on") }}</h2>
+  {% if account.oidc_sub %}
+  <p>{{ _("Dieses Konto ist mit {name} verknüpft. Die Anmeldung über {name} führt in dieses Konto.", name=sso_name) }}</p>
+  <form method="post" action="/account/oidc/unlink"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">{{ _("Verknüpfung lösen") }}</button></form>
+  {% else %}
+  <p class="muted">{{ _("Nach der Verknüpfung führt die Anmeldung über {name} in dieses Konto, statt ein eigenes Konto anzulegen.", name=sso_name) }}</p>
+  <form method="post" action="/account/oidc/link"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">{{ _("Mit {name} verknüpfen", name=sso_name) }}</button></form>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="card">
   <h2>{{ _("Passwort ändern") }}</h2>
   <form method="post" action="/account/password" class="stack-form">
