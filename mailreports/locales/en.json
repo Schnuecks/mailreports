@@ -204,6 +204,7 @@
  "läuft gerade": "running",
  "neu": "new",
  "nur beobachten und Berichte schicken": "only monitor and send reports",
+ "nur lesen": "read-only",
  "nur mit Fehlschlägen": "only with failures",
  "nur mit fremder Domain signiert ({doms})": "only signed with a different domain ({doms})",
  "ohne AS-Daten (GeoLite2-ASN.mmdb fehlt)": "without AS data (GeoLite2-ASN.mmdb missing)",

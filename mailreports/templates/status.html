@@ -15,7 +15,7 @@
   <dl class="kv">
     <dt>{{ _("Server") }}</dt><dd>{{ settings.imap_host }}:{{ settings.imap_port }} ({{ settings.imap_security }})</dd>
     <dt>{{ _("Konto") }}</dt><dd>{{ settings.imap_user }}</dd>
-    <dt>{{ _("Ordner") }}</dt><dd>{{ settings.imap_folder }}{% if settings.imap_move_to %} → {{ settings.imap_move_to }}{% endif %}</dd>
+    <dt>{{ _("Ordner") }}</dt><dd>{{ settings.imap_folder }}{% if settings.imap_readonly %} <span class="badge">{{ _("nur lesen") }}</span>{% elif settings.imap_move_to %} → {{ settings.imap_move_to }}{% endif %}</dd>
     <dt>{{ _("Intervall") }}</dt><dd>{{ _("alle {n} Minuten", n=settings.fetch_interval // 60) }}</dd>
     <dt>{{ _("Letzter Abruf") }}</dt><dd>{{ fmt.datetime(last_fetch) }}{% if fetch_running %} <span class="badge">{{ _("läuft gerade") }}</span>{% endif %}</dd>
     <dt>{{ _("Letzter Erfolg") }}</dt><dd>{{ fmt.datetime(last_ok) }}</dd>

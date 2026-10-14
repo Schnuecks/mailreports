@@ -41,6 +41,9 @@ class FakeIMAP:
             return "OK", [b""]
         raise AssertionError(cmd)
 
+    def response(self, code):
+        return code, [b"42"]
+
     def expunge(self):
         return "OK", [b""]
 
@@ -90,3 +93,19 @@ def test_connection_error_is_recorded(service, monkeypatch):
 @pytest.mark.parametrize("text", ["LOGIN user secret failed"])
 def test_describe_error_hides_password(text):
     assert "secret" not in fetch.describe_error(text)
+
+
+def test_readonly_changes_nothing(tmp_path, monkeypatch):
+    from mailreports.service import Service
+    svc = Service(make_settings(tmp_path, imap_host="imap.test", imap_user="u", imap_readonly=True,
+                                imap_move_to="Done"))
+    fake = FakeIMAP({b"1": mail(("r.xml", DMARC_XML, "text/xml")), b"2": mail()})
+    monkeypatch.setattr(fetch, "connect", lambda s: fake)
+    first = svc.run_once()
+    assert first.mails == 2 and len(first.outcome.new_dmarc) == 1
+    assert {c[0] for c in fake.calls} <= {"SEARCH", "FETCH"}
+    assert "Done" not in fake.folders and not fake.flags
+    assert svc.run_once().mails == 0          # remembered in the database
+    fake.folders["INBOX"][b"3"] = mail(("t.json", TLS_JSON, "application/json"))
+    third = svc.run_once()
+    assert third.mails == 1 and len(third.outcome.new_tls) == 1

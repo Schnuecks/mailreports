@@ -2,7 +2,7 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.1.0
 
 First version.
 
@@ -10,6 +10,8 @@ First version.
   mailbox over TLS; `.xml`, `.json`, `.gz` and `.zip`, independent of the MIME type
 - Processed mails are flagged or moved to a folder, never deleted; duplicate reports are
   recognised by organisation and report ID
+- Read-only mode (`IMAP_READONLY`) that leaves the mailbox untouched, for running next to
+  another program reading the same mailbox
 - Overview per domain with DMARC pass rate, daily history and published policy
 - Plain-language explanations for every report record and every TLS failure type
 - Sender classification from a `sources.toml` file (IP, reverse DNS, AS number, DKIM

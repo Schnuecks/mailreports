@@ -16,6 +16,7 @@ lesen:** `NAME_FILE=/pfad` hat Vorrang vor `NAME` – gedacht für Docker-Secret
 | `IMAP_FOLDER` | `INBOX` | Ordner mit den Berichtsmails |
 | `IMAP_MOVE_TO` | – | Ordner für verarbeitete Mails (wird angelegt). Leer: Mails bleiben liegen und werden als gelesen mit dem Schlagwort `$MailreportsDone` markiert. |
 | `IMAP_ERROR_FOLDER` | – | Ordner für Mails ohne verwertbaren Bericht. Leer: Schlagwort `$MailreportsError`. |
+| `IMAP_READONLY` | `false` | `true`: Postfach nur lesend öffnen und nichts verändern (keine Markierungen, kein Verschieben); verarbeitete Mails merkt sich die Datenbank. Für den Betrieb neben einem anderen Programm, das dasselbe Postfach liest. |
 | `FETCH_INTERVAL` | 900 | Sekunden zwischen zwei Abrufen (mindestens 60) |
 
 Mails werden nie gelöscht. Mails mit einem der beiden Schlagwörter werden bei späteren
