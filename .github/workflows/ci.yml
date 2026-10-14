@@ -93,9 +93,10 @@ jobs:
           cache-from: type=gha
       - name: Smoke test
         run: |
-          docker run -d --name smoke --read-only --tmpfs /tmp -p 8080:8080 mailreports:scan
+          docker run -d --name smoke --read-only --tmpfs /tmp -p 8080:8080 -e ADMIN_PASSWORD=smoke-test-password mailreports:scan
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && break; sleep 1; done
-          curl -fsS http://127.0.0.1:8080/ > /dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/)" = 303   # sign-in required
+          curl -fsS http://127.0.0.1:8080/login > /dev/null
           docker logs smoke
           docker rm -f smoke
       - uses: aquasecurity/trivy-action@v0.36.0

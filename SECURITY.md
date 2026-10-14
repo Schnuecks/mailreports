@@ -30,8 +30,10 @@ files are therefore treated as untrusted input:
 
 Access:
 
-- The app has no user accounts. Protect it with a login proxy and `AUTH_HEADER`. The header
-  is only trusted together with `TRUSTED_PROXIES` (the app refuses to start without it);
+- The app does not start without a sign-in: a password (`ADMIN_PASSWORD`, plain or as an
+  Argon2 hash, signed HttpOnly session cookie, failed attempts limited per address) or a
+  login proxy with `AUTH_HEADER`. The header is only trusted together with
+  `TRUSTED_PROXIES` (the app refuses to start without it);
   set it to the proxy's own address, not the whole Docker network, and do not publish the
   port, otherwise other containers could send the header themselves.
 - Form posts are only accepted from the same site (`Sec-Fetch-Site`, otherwise `Origin`).

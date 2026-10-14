@@ -50,8 +50,14 @@ Domain und TLS-Fehlertyp).
 
 ## Zugriff
 
+Ohne Anmeldung startet mailreports nicht: entweder ein Passwort (eingebaute Anmeldung) oder
+ein Anmelde-Proxy (`AUTH_HEADER`). Ist `AUTH_HEADER` gesetzt, wird das Passwort nicht genutzt.
+
 | Variable | Standard | Bedeutung |
 |---|---|---|
+| `ADMIN_PASSWORD` | – | Passwort für die Anmeldeseite (besser: `ADMIN_PASSWORD_FILE`). Entweder das Passwort selbst oder ein Argon2-Hash aus `python -m mailreports hash-password`. Fünf Fehlversuche pro Adresse sperren für 15 Minuten; eine Sitzung hält 30 Tage, ein neues Passwort meldet alle ab. |
+| `COOKIE_SECURE` | `false` | `true`: Sitzungs-Cookie nur über HTTPS senden. Setzen, wenn ein HTTPS-Proxy davor steht. |
+| `AUTH_DISABLED` | `false` | `true`: gar keine Anmeldung. Nur für lokale Tests – jeder, der den Port erreicht, sieht alles. |
 | `AUTH_HEADER` | – | Header mit dem Benutzernamen vom Anmelde-Proxy, z. B. `Remote-User`. Wenn gesetzt, bekommen Anfragen ohne ihn 401. Braucht `TRUSTED_PROXIES`, sonst startet mailreports nicht. |
 | `ALLOWED_GROUPS` | – | Kommagetrennt; mindestens eine muss in `Remote-Groups` stehen |
 | `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403. Am besten nur die Adresse des Proxys, nicht das ganze Netz (siehe [Installation](installation.md#3-hinter-einem-reverse-proxy-mit-anmeldung)). |

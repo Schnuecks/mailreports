@@ -84,7 +84,8 @@ def zipped(name: str, data: bytes) -> bytes:
 def make_settings(tmp_path, **kw) -> Settings:
     src = tmp_path / "sources.toml"
     src.write_text(SOURCES, encoding="utf-8")
-    base = dict(data_dir=tmp_path / "data", background_tasks=False, dns_lookups=False, sources_file=str(src))
+    base = dict(data_dir=tmp_path / "data", background_tasks=False, dns_lookups=False, sources_file=str(src),
+                auth_disabled=True)
     base.update(kw)
     return Settings(**base)
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import threading
 
-from . import config, enrich, fetch, notify
+from . import auth, config, enrich, fetch, notify
 from .db import Database
 from .ingest import Outcome
 from .sources import load_sources
@@ -17,10 +17,19 @@ log = logging.getLogger(__name__)
 class Service:
     def __init__(self, settings: config.Settings | None = None):
         self.settings = settings or config.load()
-        if self.settings.auth_header and not self.settings.trusted_proxies:
+        s = self.settings
+        if s.auth_header and not s.trusted_proxies:
             # Without it anyone who reaches the port could send the header and sign in as anybody
             raise SystemExit("AUTH_HEADER needs TRUSTED_PROXIES: set it to the address of your reverse proxy "
                              "(for a proxy with network_mode: host, the gateway of the proxy network).")
+        if not (s.auth_header or s.admin_password or s.auth_disabled):
+            raise SystemExit("No sign-in configured: set ADMIN_PASSWORD (or ADMIN_PASSWORD_FILE), or AUTH_HEADER "
+                             "and TRUSTED_PROXIES behind a login proxy.")
+        if s.auth_disabled and not s.auth_header and not s.admin_password:
+            log.warning("AUTH_DISABLED is set: everybody who reaches the port can see all reports.")
+        self.sessions = None
+        if s.admin_password and not s.auth_header:
+            self.sessions = auth.Sessions(auth.load_key(s.data_dir), s.admin_password)
         self.db = Database(self.settings.db_path)
         self.sources = load_sources(self.settings.sources_file)
         self.geo = enrich.GeoIP(self.settings)

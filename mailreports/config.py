@@ -86,6 +86,9 @@ class Settings:
     notify_cooldown_hours: int = 24
     base_url: str = ""
     # Access
+    admin_password: str = ""          # built-in sign-in: the password or an Argon2 hash
+    auth_disabled: bool = False       # no sign-in at all (local testing only)
+    cookie_secure: bool = False       # session cookie only over HTTPS
     auth_header: str = ""             # e.g. Remote-User: requests without it are refused
     allowed_groups: list[str] = field(default_factory=list)
     trusted_proxies: list = field(default_factory=list)
@@ -137,6 +140,9 @@ def load() -> Settings:
         pushover_user=env("PUSHOVER_USER"),
         notify_cooldown_hours=max(1, env_int("NOTIFY_COOLDOWN_HOURS", 24)),
         base_url=env("BASE_URL").rstrip("/"),
+        admin_password=env("ADMIN_PASSWORD"),
+        auth_disabled=env_bool("AUTH_DISABLED", False),
+        cookie_secure=env_bool("COOKIE_SECURE", False),
         auth_header=env("AUTH_HEADER"),
         allowed_groups=env_list("ALLOWED_GROUPS"),
         trusted_proxies=_networks(env_list("TRUSTED_PROXIES")),

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Schnuecks
-"""Command line: python -m mailreports import FILE... | fetch | check"""
+"""Command line: python -m mailreports import FILE... | fetch | check | hash-password"""
 from __future__ import annotations
 
 import argparse
@@ -19,7 +19,22 @@ def main(argv: list[str] | None = None) -> int:
     imp.add_argument("files", nargs="+", type=Path)
     sub.add_parser("fetch", help="fetch the IMAP mailbox once")
     sub.add_parser("check", help="test the IMAP login and show the settings")
+    sub.add_parser("hash-password", help="read a password and print its Argon2 hash for ADMIN_PASSWORD")
     args = parser.parse_args(argv)
+
+    if args.cmd == "hash-password":
+        import getpass
+
+        from .auth import hash_password
+        first = getpass.getpass("Password: ")
+        if len(first) < 12:
+            print("Please use at least 12 characters.", file=sys.stderr)
+            return 2
+        if getpass.getpass("Repeat: ") != first:
+            print("The passwords differ.", file=sys.stderr)
+            return 2
+        print(hash_password(first))
+        return 0
 
     svc = Service()
     if args.cmd == "import":

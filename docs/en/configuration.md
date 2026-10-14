@@ -48,8 +48,14 @@ A finding is identified by domain and IP (or domain and TLS failure type).
 
 ## Access
 
+mailreports does not start without a sign-in: either a password (built-in sign-in) or a
+login proxy (`AUTH_HEADER`). With `AUTH_HEADER` set, the password is not used.
+
 | Variable | Default | Meaning |
 |---|---|---|
+| `ADMIN_PASSWORD` | – | Password for the sign-in page (better: `ADMIN_PASSWORD_FILE`). Either the password itself or an Argon2 hash from `python -m mailreports hash-password`. Five failed attempts per address block it for 15 minutes; a session lasts 30 days, changing the password signs everybody out. |
+| `COOKIE_SECURE` | `false` | `true`: send the session cookie over HTTPS only. Set it when an HTTPS proxy is in front. |
+| `AUTH_DISABLED` | `false` | `true`: no sign-in at all. Only for local tests – everybody who reaches the port sees everything. |
 | `AUTH_HEADER` | – | Header with the user name set by the login proxy, e.g. `Remote-User`. If set, requests without it get 401. Requires `TRUSTED_PROXIES`, otherwise mailreports refuses to start. |
 | `ALLOWED_GROUPS` | – | Comma-separated; at least one must appear in `Remote-Groups` |
 | `TRUSTED_PROXIES` | – | Comma-separated addresses or networks; requests from anywhere else get 403. Use the proxy's single address, not the whole network (see [Installation](installation.md#3-behind-a-reverse-proxy-with-login)). |

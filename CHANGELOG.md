@@ -12,6 +12,12 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
   longer suggests changing your SPF record
 - Menu on phones wraps instead of being cut off
 - Link "Source code on GitHub" in the footer, configurable with `SOURCE_URL`
+- **Sign-in required:** without a login proxy, the page is protected by a password
+  (`ADMIN_PASSWORD` or `ADMIN_PASSWORD_FILE`, plain or as an Argon2 hash from
+  `python -m mailreports hash-password`), with a signed session cookie and a limit on failed
+  attempts. Without a password or `AUTH_HEADER` the app refuses to start; `AUTH_DISABLED=true`
+  turns sign-in off for local tests. **When updating without a login proxy, set
+  `ADMIN_PASSWORD_FILE` first.**
 - `AUTH_HEADER` now requires `TRUSTED_PROXIES`; without it mailreports refuses to start,
   because anyone reaching the port could otherwise send the login header
 - Form posts are also checked against the `Origin` header for browsers without

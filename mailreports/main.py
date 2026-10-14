@@ -9,13 +9,13 @@ import math
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, i18n, queries, web
+from . import __version__, auth, i18n, queries, web
 from .explain import explain_record
 from .ingest import Outcome, ingest_payload
 from .parsing import Payload
@@ -61,6 +61,14 @@ def create_app(service: Service | None = None) -> FastAPI:
             if addr is None or not any(addr in net for net in settings.trusted_proxies):
                 return PlainTextResponse("Forbidden", status_code=403)
         request.state.user = ""
+        path = request.url.path
+        if svc.sessions and path not in ("/login", "/healthz") and not path.startswith("/static/"):
+            if not svc.sessions.valid(request.cookies.get(auth.COOKIE)):
+                if request.method == "GET":
+                    target = path + (f"?{request.url.query}" if request.url.query else "")
+                    return RedirectResponse(f"/login?next={quote(target)}", status_code=303)
+                return PlainTextResponse("Unauthorized", status_code=401)
+            request.state.user = "admin"
         if settings.auth_header:
             user = request.headers.get(settings.auth_header, "").strip()
             if not user:
@@ -108,6 +116,7 @@ def create_app(service: Service | None = None) -> FastAPI:
     def render(request: Request, name: str, **ctx):
         ctx.setdefault("days", days_of(request))
         ctx.update(request=request, periods=PERIODS, user=getattr(request.state, "user", ""),
+                   password_login=bool(svc.sessions),
                    nav=name.split(".")[0], fetch_running=svc.running)
         return web.templates.TemplateResponse(request, name, ctx)
 
@@ -242,6 +251,45 @@ def create_app(service: Service | None = None) -> FastAPI:
         return RedirectResponse(
             f"/status?uploaded={len(total.new_dmarc)}-{len(total.new_tls)}-{total.duplicates}-{len(total.errors)}",
             status_code=303)
+
+    def safe_next(value: str) -> str:
+        """Only local paths, so the login cannot be used to redirect elsewhere."""
+        return value if value.startswith("/") and not value.startswith("//") and "\\" not in value else "/"
+
+    @app.get("/login")
+    def login_page(request: Request):
+        if not svc.sessions:
+            return RedirectResponse("/", status_code=303)
+        return render(request, "login.html", next=safe_next(request.query_params.get("next", "/")), error="")
+
+    @app.post("/login")
+    def login(request: Request, password: str = Form(""), next: str = Form("/")):
+        if not svc.sessions:
+            return RedirectResponse("/", status_code=303)
+        client = request.client.host if request.client else ""
+        target = safe_next(next)
+        if svc.sessions.blocked(client):
+            resp = render(request, "login.html", next=target,
+                          error=i18n._("Zu viele Fehlversuche. Bitte in einer Viertelstunde erneut versuchen."))
+            resp.status_code = 429
+            return resp
+        if not auth.check_password(settings.admin_password, password):
+            svc.sessions.failed(client)
+            log.warning("failed sign-in from %s", client)
+            resp = render(request, "login.html", next=target, error=i18n._("Das Passwort stimmt nicht."))
+            resp.status_code = 401
+            return resp
+        svc.sessions.succeeded(client)
+        resp = RedirectResponse(target, status_code=303)
+        resp.set_cookie(auth.COOKIE, svc.sessions.create(), max_age=auth.SESSION_DAYS * 86400, httponly=True,
+                        samesite="lax", secure=settings.cookie_secure or request.url.scheme == "https")
+        return resp
+
+    @app.post("/logout")
+    def logout():
+        resp = RedirectResponse("/login" if svc.sessions else "/", status_code=303)
+        resp.delete_cookie(auth.COOKIE)
+        return resp
 
     @app.get("/lang/{code}")
     def set_lang(request: Request, code: str):
