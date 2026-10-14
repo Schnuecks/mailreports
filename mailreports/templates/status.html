@@ -2,6 +2,7 @@
 {% block title %}{{ _("Status") }}{% endblock %}
 {% block content %}
 <div class="page-head"><h1>{{ _("Status") }}</h1></div>
+{% if public_url_hint %}<div class="notice bad">{{ _(public_url_hint, public=public_url, host=request_host) }}</div>{% endif %}
 
 {% if uploaded %}{% set u = uploaded.split("-") %}
 <div class="notice {{ 'bad' if u[3] != '0' else 'ok' }}">{{ _("Hochgeladen: {d} neue DMARC-Berichte, {t} neue TLS-Berichte, {dup} schon bekannt, {e} Fehler.", d=u[0], t=u[1], dup=u[2], e=u[3]) }}</div>

@@ -26,6 +26,11 @@ class Service:
                              "(for a proxy with network_mode: host, the gateway of the proxy network).")
         if s.auth_disabled and not s.auth_header:
             log.warning("AUTH_DISABLED is set: everybody who reaches the port can see all reports.")
+        if s.accounts_enabled and not s.public_url:
+            log.warning("PUBLIC_URL is not set. Behind a reverse proxy, passkeys and single sign-on need it, "
+                        "e.g. PUBLIC_URL=https://dmarc.example.org")
+        if s.public_url and not s.public_url.startswith(("https://", "http://localhost", "http://127.0.0.1")):
+            log.warning("PUBLIC_URL %s does not use HTTPS; browsers allow passkeys only over HTTPS.", s.public_url)
         if s.oidc_issuer and not s.oidc_issuer.startswith("https://"):
             raise SystemExit("OIDC_ISSUER must be an https:// address.")
         self.limiter = accounts.LoginLimiter()
