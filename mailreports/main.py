@@ -20,7 +20,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, accounts, advice, dnscheck, i18n, queries, routes_auth, web
+from . import __version__, accounts, advice, dnscheck, i18n, notify, notifyconfig, queries, routes_auth, web
 from .explain import explain_record
 from .ingest import Outcome, ingest_payload
 from .parsing import Payload
@@ -64,7 +64,7 @@ def _csv_cell(value):
 # Reachable without a session (built-in accounts)
 PUBLIC_PATHS = ("/static/", "/login", "/setup", "/oidc/callback", "/lang/")
 # Only for admins
-ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload")
+ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload", "/settings")
 
 
 def create_app(service: Service | None = None) -> FastAPI:
@@ -375,8 +375,39 @@ def create_app(service: Service | None = None) -> FastAPI:
         return render(request, "status.html", mails=queries.recent_mails(svc.db), counts=queries.counts(svc.db),
                       last_fetch=svc.db.get_meta("last_fetch"), last_ok=svc.db.get_meta("last_fetch_ok"),
                       fetch_error=svc.db.get_meta("last_fetch_error"), summary=summary,
-                      notify_error=svc.db.get_meta("last_notify_error"), settings=settings,
+                      notify_error=svc.db.get_meta("last_notify_error"), settings=svc.notify_settings(),
                       geo=svc.geo, sources=svc.sources, uploaded=request.query_params.get("uploaded"))
+
+    def settings_page(request: Request, status: int = 200, **ctx):
+        stored = notifyconfig.load(svc.db, settings.secret_key)
+        unreadable = sorted({i18n._(notifyconfig.CHANNEL_OF[f]) for f in stored.unreadable})
+        ctx.setdefault("values", {})
+        return render(request, "settings.html", status=status, s=svc.notify_settings(), stored=stored.values,
+                      unreadable=unreadable, given=settings.env_given, env_names=notifyconfig.NOTIFY_VARS,
+                      secrets=notifyconfig.SECRETS, encrypted=bool(settings.secret_key), **ctx)
+
+    @app.get("/settings")
+    def settings_get(request: Request):
+        return settings_page(request, saved=request.query_params.get("saved") == "1")
+
+    @app.post("/settings")
+    async def settings_post(request: Request):
+        form = await request.form()
+        if not web.check_csrf(request, str(form.get("csrf", ""))):
+            raise HTTPException(403)
+        values = {k: str(v) for k, v in form.items() if k in notifyconfig.NOTIFY_VARS}
+        clear = {k[len("clear_"):] for k in form if k.startswith("clear_")}
+        try:
+            notifyconfig.save(svc.db, settings, values, clear)
+        except notifyconfig.Invalid as exc:
+            return settings_page(request, status=400, error=i18n._(exc.message, **exc.params),
+                                 error_field=exc.field, values=values)
+        if form.get("action") == "test":
+            current = svc.notify_settings()
+            if not current.notify_enabled:
+                return settings_page(request, error=i18n._("Es ist noch kein Kanal vollständig eingerichtet."))
+            return settings_page(request, results=notify.send_test(svc.db, current))
+        return RedirectResponse("/settings?saved=1", status_code=303)
 
     @app.post("/fetch")
     def fetch_now(request: Request, csrf: str = Form("")):

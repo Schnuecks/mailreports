@@ -37,7 +37,11 @@ zählt als doppelt.
 
 ## Benachrichtigungen
 
-Funde gehen an alle eingerichteten Kanäle.
+Funde gehen an alle eingerichteten Kanäle. Admins können die Kanäle, die Wochenübersicht und
+den Mindestabstand auch in der App unter **Einstellungen** einrichten und dort eine
+Testnachricht senden. Gesetzte Umgebungsvariablen haben Vorrang und erscheinen auf der Seite als
+festgelegt. In der App eingegebene Tokens und Passwörter werden mit `SECRET_KEY` verschlüsselt
+gespeichert (ohne ihn unverschlüsselt).
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
@@ -80,7 +84,7 @@ Abruf starten) oder **Lesezugriff**.
 | `PUBLIC_URL` | – | Adresse im Browser, z. B. `https://dmarc.example.org`. Hinter einem Reverse-Proxy nötig für Passkeys und Single Sign-on; das Sitzungs-Cookie gilt dann nur über HTTPS, und die Adresse dient als Link in Benachrichtigungen. Status- und Kontoseite warnen, wenn sie fehlt oder nicht zur aufgerufenen Adresse passt – bei einem Adresswechsel daran denken (und an die Rücksprung-Adresse beim Anbieter). |
 | `ADMIN_USERNAME` | `admin` | Name des ersten Kontos, das aus `ADMIN_PASSWORD` angelegt wird |
 | `ADMIN_PASSWORD` | – | Legt beim Start das erste Administratorkonto an, falls es noch keines gibt, statt des Einrichtungscodes (besser: `ADMIN_PASSWORD_FILE`). Das Passwort selbst oder ein Argon2-Hash aus `python -m mailreports hash-password`. Wird ignoriert, sobald Konten existieren. |
-| `SECRET_KEY` | – | Verschlüsselt die Schlüssel der Authenticator-Apps in der Datenbank (beliebiger langer Zufallstext, besser: `SECRET_KEY_FILE`). Aufbewahren: Ohne ihn funktionieren die Codes bestehender Zwei-Faktor-Anmeldungen nicht mehr. |
+| `SECRET_KEY` | – | Verschlüsselt die Schlüssel der Authenticator-Apps und die Zugangsdaten der Benachrichtigungen aus den Einstellungen in der Datenbank (beliebiger langer Zufallstext, besser: `SECRET_KEY_FILE`). Aufbewahren: Ohne ihn funktionieren die Codes bestehender Zwei-Faktor-Anmeldungen nicht mehr, und in der App gespeicherte Zugangsdaten müssen neu eingegeben werden. |
 | `COOKIE_SECURE` | automatisch | `true`/`false` legt fest, ob das Sitzungs-Cookie nur über HTTPS gesendet wird |
 | `AUTH_DISABLED` | `false` | `true`: gar keine Anmeldung. Nur für lokale Tests – jeder, der den Port erreicht, sieht alles. |
 

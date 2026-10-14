@@ -268,7 +268,7 @@ select, input[type=file] { font: inherit; color: var(--text); background: var(--
 .login form { display: flex; flex-direction: column; gap: .6rem; }
 .login label { font-size: .85rem; color: var(--muted); }
 input[type=password] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; }
-input[type=text], input:not([type]), input[type=email] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; }
+input[type=text], input:not([type]), input[type=email], input[type=url], input[type=number] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; }
 .login .or { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; margin: 1rem 0 .6rem; }
 .login .or::before, .login .or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
 .btn.wide { display: block; width: 100%; text-align: center; margin-top: .4rem; }
@@ -316,3 +316,12 @@ ul.findings li::marker { font-weight: 700; }
   border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
 .menu-toggle svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .menu-toggle[aria-expanded="true"] { background: var(--btn); color: var(--btn-text); border-color: transparent; }
+
+/* settings */
+.settings-form .card { margin-bottom: 1rem; }
+.stack-fields { display: flex; flex-direction: column; gap: .8rem; }
+.grid-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; align-items: start; }
+.field { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--muted); }
+.field label.check { display: flex; flex-direction: row; align-items: center; gap: .4rem; color: var(--text); }
+.field input:disabled, .field select:disabled { opacity: .65; }
+.field.invalid input, .field.invalid select { border-color: var(--bad-text); }

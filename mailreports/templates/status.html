@@ -63,6 +63,7 @@
     <dt>{{ _("Kennzahlen") }}</dt><dd><a href="/api/metrics">/api/metrics</a> · <a href="/metrics">/metrics</a>{% if settings.metrics_token %} · {{ _("Zugriff mit Token möglich") }}{% endif %}</dd>
   </dl>
   {% if notify_error %}<div class="notice bad">{{ notify_error }}</div>{% endif %}
+  {% if is_admin %}<p><a href="/settings">{{ _("Benachrichtigungen einrichten") }} →</a></p>{% endif %}
 </section>
 </div>
 

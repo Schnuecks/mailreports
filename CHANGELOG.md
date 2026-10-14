@@ -2,6 +2,14 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.4.0
+
+- **Settings page** for admins: set up Pushover, ntfy, webhook and email notifications, the
+  weekly summary and the cooldown in the app, and send a test message with the result per channel
+- Tokens and passwords entered there are stored encrypted with `SECRET_KEY`; variables in the
+  environment still take precedence and are shown as fixed
+- The status page links to the settings and lists all active channels
+
 ## 0.3.1
 
 - Notifications link to `PUBLIC_URL` when `BASE_URL` is not set (before, messages had no link)

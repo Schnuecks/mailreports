@@ -74,8 +74,16 @@ passt).
 
 Postfach und letzter Abruf (mit Knopf **Jetzt abrufen**), Hochladen von Berichtsdateien, die
 Zahl der gespeicherten Berichte, welche Zusatzdienste aktiv sind (GeoIP, Reverse-DNS,
-bekannte Quellen, Pushover) und die zuletzt verarbeiteten Mails, mit dem Grund, wenn eine
-Mail keinen verwertbaren Bericht enthielt.
+bekannte Quellen, Benachrichtigungen) und die zuletzt verarbeiteten Mails, mit dem Grund, wenn
+eine Mail keinen verwertbaren Bericht enthielt.
+
+## Einstellungen
+
+Admins richten hier die Benachrichtigungen ein: Pushover, ntfy, Webhook und E-Mail, wie oft
+derselbe Fund gemeldet werden darf und die Wochenübersicht. **Speichern und Testnachricht
+senden** prüft die Kanäle sofort und zeigt das Ergebnis je Kanal. Ein leeres Passwortfeld behält
+den gespeicherten Wert, **entfernen** löscht ihn. Über Umgebungsvariablen gesetzte Felder
+erscheinen als festgelegt.
 
 ## Konten
 

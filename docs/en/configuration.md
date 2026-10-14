@@ -36,7 +36,10 @@ A report that is already stored (same organisation and report ID) counts as a du
 
 ## Notifications
 
-Findings are sent to every configured channel.
+Findings are sent to every configured channel. Admins can also set up the channels, the
+weekly summary and the cooldown in the app under **Settings**, and send a test message there.
+Variables set in the environment take precedence and are shown as fixed on that page. Tokens and
+passwords entered in the app are stored encrypted with `SECRET_KEY` (without it, unencrypted).
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -77,7 +80,7 @@ fetch) or **read access**.
 | `PUBLIC_URL` | – | Address in the browser, e.g. `https://dmarc.example.org`. Needed behind a reverse proxy for passkeys and single sign-on; also makes the session cookie HTTPS-only and is the link in notifications. The status and account pages warn if it is missing or differs from the address in the browser – remember to change it (and the redirect URI at the provider) when the address changes. |
 | `ADMIN_USERNAME` | `admin` | Name of the first account created from `ADMIN_PASSWORD` |
 | `ADMIN_PASSWORD` | – | Creates the first admin account on start if there is none yet, instead of the setup code (better: `ADMIN_PASSWORD_FILE`). The password itself or an Argon2 hash from `python -m mailreports hash-password`. Ignored once accounts exist. |
-| `SECRET_KEY` | – | Encrypts the authenticator keys in the database (any long random text, better: `SECRET_KEY_FILE`). Keep it: without it, codes of existing two-factor sign-ins stop working. |
+| `SECRET_KEY` | – | Encrypts the authenticator keys and the notification credentials from the settings page in the database (any long random text, better: `SECRET_KEY_FILE`). Keep it: without it, codes of existing two-factor sign-ins stop working and credentials saved in the app must be entered again. |
 | `COOKIE_SECURE` | automatic | `true`/`false` overrides whether the session cookie is sent over HTTPS only |
 | `AUTH_DISABLED` | `false` | `true`: no sign-in at all. Only for local tests – everybody who reaches the port sees everything. |
 

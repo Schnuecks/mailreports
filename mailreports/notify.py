@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Schnuecks
-"""Push notifications (Pushover) for new failures and unknown senders.
+"""Notifications (Pushover, ntfy, webhook, email) for new failures and unknown senders.
 
 Each finding has a key (e.g. domain + IP). A key is reported at most once per
 NOTIFY_COOLDOWN_HOURS, so a sender that shows up in every daily report does not
@@ -146,27 +146,45 @@ def send_email(settings: Settings, title: str, message: str) -> None:
             pass
 
 
-def send_all(db: Database, settings: Settings, title: str, message: str, data: dict | None = None) -> bool:
-    """Sends to every configured channel. True if at least one succeeded; errors are kept for the status page."""
-    channels = []
+def channels(settings: Settings, title: str, message: str, data: dict | None = None) -> list:
+    """(name, send) for every configured channel."""
+    out = []
     if settings.pushover_enabled:
-        channels.append(("Pushover", lambda: send_pushover(settings, title, message)))
+        out.append(("Pushover", lambda: send_pushover(settings, title, message)))
     if settings.ntfy_url:
-        channels.append(("ntfy", lambda: send_ntfy(settings, title, message)))
+        out.append(("ntfy", lambda: send_ntfy(settings, title, message)))
     if settings.webhook_url:
-        channels.append(("Webhook", lambda: send_webhook(settings, title, message, data)))
+        out.append(("Webhook", lambda: send_webhook(settings, title, message, data)))
     if settings.email_enabled:
-        channels.append(("E-Mail", lambda: send_email(settings, title, message)))
-    errors, ok = [], False
-    for name, send in channels:
+        out.append(("E-Mail", lambda: send_email(settings, title, message)))
+    return out
+
+
+def send_each(settings: Settings, title: str, message: str, data: dict | None = None) -> list[tuple[str, str]]:
+    """Sends to every channel; (name, error) per channel, error empty on success."""
+    results = []
+    for name, send in channels(settings, title, message, data):
         try:
             send()
-            ok = True
+            results.append((name, ""))
         except (OSError, RuntimeError, ValueError, smtplib.SMTPException) as exc:
             log.warning("notification via %s failed: %s", name, exc)
-            errors.append(f"{name}: {exc}"[:300])
-    db.set_meta("last_notify_error", "; ".join(errors))
-    return ok
+            results.append((name, str(exc)[:300] or type(exc).__name__))
+    return results
+
+
+def send_all(db: Database, settings: Settings, title: str, message: str, data: dict | None = None) -> bool:
+    """Sends to every configured channel. True if at least one succeeded; errors are kept for the status page."""
+    results = send_each(settings, title, message, data)
+    db.set_meta("last_notify_error", "; ".join(f"{name}: {err}" for name, err in results if err))
+    return any(not err for _name, err in results)
+
+
+def send_test(db: Database, settings: Settings) -> list[tuple[str, str]]:
+    title = (settings.app_title or "mailreports") + ": " + _("Testnachricht")
+    results = send_each(settings, title, _("Die Benachrichtigungen sind richtig eingerichtet."), {"test": True})
+    db.set_meta("last_notify_error", "; ".join(f"{name}: {err}" for name, err in results if err))
+    return results
 
 
 def notify(db: Database, settings: Settings, sources: list[Source],

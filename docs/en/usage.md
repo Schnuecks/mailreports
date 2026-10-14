@@ -69,8 +69,15 @@ expired certificate or a TLSA record that no longer matches after a certificate 
 ## Status
 
 Mailbox and last fetch (with a **Fetch now** button), upload of report files, the number of
-stored reports, which extras are active (GeoIP, reverse DNS, known sources, Pushover) and
+stored reports, which extras are active (GeoIP, reverse DNS, known sources, notifications) and
 the emails processed last, with the reason when an email did not contain a usable report.
+
+## Settings
+
+Admins set up the notifications here: Pushover, ntfy, webhook and email, how often the same
+finding may be reported and the weekly summary. **Save and send a test message** checks the
+channels at once and shows the result per channel. An empty password field keeps the stored
+value; **remove** deletes it. Fields set by environment variables are shown as fixed.
 
 ## Accounts
 
