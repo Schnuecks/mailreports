@@ -115,7 +115,9 @@ def setup(service) -> None:
     env.globals.update(
         _=i18n.gettext, ngettext=i18n.ngettext, fmt=fmt, num=fmt_number, pct=fmt_pct,
         bar_chart=bar_chart, loads=loads, ex=explain, version=__version__,
-        app_title=s.app_title, logo_url=s.logo_url, source_url=s.source_url, languages=i18n.LANGUAGES,
+        app_title=s.app_title, theme=s.theme,
+        logo_url=s.logo_url or ("/static/icon-olive.svg" if s.theme == "olive" else "/static/icon.svg"),
+        source_url=s.source_url, languages=i18n.LANGUAGES,
         current_language=i18n.current,
     )
     service.tz = tz

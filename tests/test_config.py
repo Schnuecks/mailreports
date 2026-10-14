@@ -38,3 +38,22 @@ def test_warns_about_wide_trusted_network(tmp_path, caplog):
     caplog.clear()
     Service(make_settings(tmp_path, trusted_proxies=[ipaddress.ip_network("172.20.1.1/32")]))
     assert "whole network" not in caplog.text
+
+
+def test_theme(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from mailreports.main import create_app
+    from mailreports.service import Service
+    from tests.conftest import make_settings
+    monkeypatch.setenv("THEME", "Olive")
+    assert config.load().theme == "olive"
+    monkeypatch.setenv("THEME", "pink")
+    with pytest.raises(SystemExit):
+        config.load()
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    html = TestClient(create_app(Service(make_settings(tmp_path / "a", theme="olive")))).get("/").text
+    assert 'data-theme="olive"' in html and "/static/icon-olive.svg" in html
+    html = TestClient(create_app(Service(make_settings(tmp_path / "b")))).get("/").text
+    assert "data-theme" not in html and 'src="/static/icon.svg"' in html

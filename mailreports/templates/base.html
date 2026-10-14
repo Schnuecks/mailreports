@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="{{ current_language() }}">
+<html lang="{{ current_language() }}"{% if theme != "neutral" %} data-theme="{{ theme }}"{% endif %}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{% endblock %} · {{ app_title or "mailreports" }}</title>
-<link rel="icon" href="{{ logo_url or '/static/icon.svg' }}">
+<link rel="icon" href="{{ logo_url }}">
 <link rel="stylesheet" href="/static/style.css?v={{ version }}">
 <script src="/static/app.js?v={{ version }}" defer></script>
 <script src="/static/passkeys.js?v={{ version }}" defer></script>
@@ -12,7 +12,7 @@
 <body>
 <header class="top">
   <a class="brand" href="/">
-    <img src="{{ logo_url or '/static/icon.svg' }}" alt="" width="34" height="34">
+    <img src="{{ logo_url }}" alt="" width="34" height="34">
     <span>{{ app_title or "mailreports" }}</span>
   </a>
   <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="{{ _('Menü') }}">

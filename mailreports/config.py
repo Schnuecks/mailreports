@@ -119,6 +119,7 @@ class Settings:
     # Appearance
     app_title: str = ""
     logo_url: str = ""
+    theme: str = "neutral"            # neutral or olive
     default_language: str = ""
     domains: list[str] = field(default_factory=list)
     source_url: str = "https://github.com/Schnuecks/mailreports"
@@ -157,6 +158,16 @@ class Settings:
 
 
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+THEMES = ("neutral", "olive")
+
+
+def _theme(value: str) -> str:
+    value = (value or "neutral").strip().lower()
+    if value not in THEMES:
+        raise SystemExit("THEME must be neutral or olive")
+    return value
 
 
 def _weekday(value: str) -> int:
@@ -239,6 +250,7 @@ def load() -> Settings:
         trusted_proxies=_networks(env_list("TRUSTED_PROXIES")),
         app_title=env("APP_TITLE"),
         logo_url=env("LOGO_URL"),
+        theme=_theme(env("THEME", "neutral")),
         default_language=env("DEFAULT_LANGUAGE").lower(),
         domains=[d.lower() for d in env_list("DOMAINS")],
         source_url=env("SOURCE_URL", "https://github.com/Schnuecks/mailreports"),

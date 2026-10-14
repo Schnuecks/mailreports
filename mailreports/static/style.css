@@ -1,5 +1,58 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 :root {
+  --bg: #f3f5f8;
+  --card: #ffffff;
+  --line: #dde3ea;
+  --text: #1b2330;
+  --muted: #5b6676;
+  --accent: #2f5fa8;
+  --accent-2: #4a7cc7;
+  --btn: #1f3a64;
+  --btn-text: #ffffff;
+  --btn-hover: #2f6fd0;
+  --header: rgba(243, 245, 248, .8);
+  --ok: #3567b5;           /* chart: passed  */
+  --bad: #d14d72;          /* chart: failed  */
+  --bad-text: #a8325f;
+  --warn: #a86400;
+  --good-bg: #e3f0e8;
+  --warn-bg: #fbecd0;
+  --bad-bg: #f9e0e8;
+  --code-bg: #eef1f5;
+  --bg-image:
+    radial-gradient(ellipse at 15% -10%, rgba(59, 116, 209, .10), transparent 55%),
+    linear-gradient(180deg, #f5f7fa 0%, #e8ecf1 100%);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141b;
+    --card: #18202b;
+    --line: #2a3442;
+    --text: #e2e8f0;
+    --muted: #9aa6b6;
+    --accent: #8fb4ef;
+    --accent-2: #8fb4ef;
+    --btn: #3b6fc4;
+    --btn-text: #ffffff;
+    --btn-hover: #5b8be0;
+    --header: rgba(20, 27, 36, .85);
+    --ok: #5b8fd9;
+    --bad: #d9628a;
+    --bad-text: #f19ab8;
+    --warn: #f0b04a;
+    --good-bg: #1d2e26;
+    --warn-bg: #3a2c12;
+    --bad-bg: #3a1c28;
+    --code-bg: #0f141b;
+    --bg-image:
+      radial-gradient(ellipse at 15% -10%, rgba(91, 139, 224, .12), transparent 55%),
+      linear-gradient(180deg, #0f141b 0%, #141b25 100%);
+    color-scheme: dark;
+  }
+}
+/* THEME=olive */
+:root[data-theme="olive"] {
   --bg: #eef2dc;
   --card: #fbfcf4;
   --line: #d9e2b8;
@@ -26,7 +79,7 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root[data-theme="olive"] {
     --bg: #0f140b;
     --card: #1a2213;
     --line: #2f3b22;
@@ -36,6 +89,7 @@
     --accent-2: #b1c465;
     --btn: #6f8f2e;
     --btn-text: #0f140b;
+    --btn-hover: #dd8706;
     --header: rgba(28, 42, 18, .85);
     --ok: #869c3e;
     --bad: #cc5c96;
@@ -52,6 +106,7 @@
     color-scheme: dark;
   }
 }
+
 
 * { box-sizing: border-box; }
 html { background: var(--bg); }
@@ -112,7 +167,7 @@ h4 { margin: 1rem 0 .35rem; font-size: .9rem; color: var(--muted); }
   border-radius: 18px;
   padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
-  box-shadow: 0 1px 2px rgba(31, 38, 24, .05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
 }
 .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem; }
 .card-head h2 { margin: 0; }

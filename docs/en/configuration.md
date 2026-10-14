@@ -28,6 +28,7 @@ A report that is already stored (same organisation and report ID) counts as a du
 | Variable | Default | Meaning |
 |---|---|---|
 | `APP_TITLE` | `mailreports` | Name in the header and the browser tab |
+| `THEME` | neutral | Colour scheme: `neutral` (grey and blue) or `olive` (olive green); light and dark follow the device |
 | `LOGO_URL` | built-in icon | Logo (34 px in the header) and favicon, e.g. an HTTPS URL |
 | `DEFAULT_LANGUAGE` | browser language | `de`, `en`, `fr`, `es`, `it` or `nl` |
 | `DOMAINS` | all | Comma-separated: which domains the overview shows, in this order |

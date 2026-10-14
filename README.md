@@ -54,8 +54,8 @@ XML and result codes.
 - **Secrets from files** (`IMAP_PASSWORD_FILE`, `PUSHOVER_TOKEN_FILE`, …) for Docker secrets
 - **Upload and import** of older report files, **help pages** on SPF, DKIM, DMARC, alignment
   and TLS reporting
-- **Six languages** (English, German, French, Spanish, Italian, Dutch), light and dark theme,
-  works on phones
+- **Six languages** (English, German, French, Spanish, Italian, Dutch), light and dark theme
+  (neutral or olive green), works on phones
 - **Small and easy to run:** one container, one SQLite file, runs as a non-root user with a
   read-only file system and a built-in health check
 
