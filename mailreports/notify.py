@@ -8,11 +8,15 @@ cause a message every day.
 """
 from __future__ import annotations
 
+import email.utils
 import json
 import logging
+import smtplib
+import ssl
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from email.message import EmailMessage
 
 from . import i18n
 from .config import Settings
@@ -91,10 +95,84 @@ def send_pushover(settings: Settings, title: str, message: str, priority: int = 
         raise RuntimeError(f"Pushover: {body.get('errors') or body}")
 
 
+def send_ntfy(settings: Settings, title: str, message: str) -> None:
+    """NTFY_URL is the topic address, e.g. https://ntfy.sh/my-topic (published as JSON to the server)."""
+    server, _sep, topic = settings.ntfy_url.rpartition("/")
+    body = {"topic": topic, "title": title[:250], "message": message[:4000], "tags": ["email"]}
+    if settings.base_url:
+        body["click"] = settings.base_url + "/"
+    headers = {"Content-Type": "application/json"}
+    if settings.ntfy_token:
+        headers["Authorization"] = f"Bearer {settings.ntfy_token}"
+    req = urllib.request.Request(server, data=json.dumps(body).encode(), headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=20):  # noqa: S310 - address from the configuration
+        pass
+
+
+def send_webhook(settings: Settings, title: str, message: str, data: dict | None = None) -> None:
+    body = {"title": title, "message": message, "url": settings.base_url + "/" if settings.base_url else "",
+            **(data or {})}
+    req = urllib.request.Request(settings.webhook_url, data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json", "User-Agent": "mailreports"},
+                                 method="POST")
+    with urllib.request.urlopen(req, timeout=20):  # noqa: S310 - address from the configuration
+        pass
+
+
+def send_email(settings: Settings, title: str, message: str) -> None:
+    msg = EmailMessage()
+    msg["Subject"] = title
+    msg["From"] = settings.smtp_from
+    msg["To"] = ", ".join(settings.notify_email)
+    msg["Date"] = email.utils.formatdate(localtime=True)
+    msg["Message-ID"] = email.utils.make_msgid(domain=settings.smtp_from.rpartition("@")[2] or None)
+    text = message + (f"\n\n{settings.base_url}/" if settings.base_url else "")
+    msg.set_content(text)
+    ctx = ssl.create_default_context()
+    if settings.smtp_security == "ssl":
+        server = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, context=ctx, timeout=30)
+    else:
+        server = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30)
+        if settings.smtp_security == "starttls":
+            server.starttls(context=ctx)
+    try:
+        if settings.smtp_user:
+            server.login(settings.smtp_user, settings.smtp_password)
+        server.send_message(msg)
+    finally:
+        try:
+            server.quit()
+        except smtplib.SMTPException:
+            pass
+
+
+def send_all(db: Database, settings: Settings, title: str, message: str, data: dict | None = None) -> bool:
+    """Sends to every configured channel. True if at least one succeeded; errors are kept for the status page."""
+    channels = []
+    if settings.pushover_enabled:
+        channels.append(("Pushover", lambda: send_pushover(settings, title, message)))
+    if settings.ntfy_url:
+        channels.append(("ntfy", lambda: send_ntfy(settings, title, message)))
+    if settings.webhook_url:
+        channels.append(("Webhook", lambda: send_webhook(settings, title, message, data)))
+    if settings.email_enabled:
+        channels.append(("E-Mail", lambda: send_email(settings, title, message)))
+    errors, ok = [], False
+    for name, send in channels:
+        try:
+            send()
+            ok = True
+        except (OSError, RuntimeError, ValueError, smtplib.SMTPException) as exc:
+            log.warning("notification via %s failed: %s", name, exc)
+            errors.append(f"{name}: {exc}"[:300])
+    db.set_meta("last_notify_error", "; ".join(errors))
+    return ok
+
+
 def notify(db: Database, settings: Settings, sources: list[Source],
            dmarc_ids: list[int], tls_ids: list[int]) -> int:
     """Send one message with all new findings outside their cooldown. Returns the number reported."""
-    if not settings.pushover_enabled:
+    if not settings.notify_enabled:
         return 0
     i18n.set_language(settings.default_language or i18n.DEFAULT)
     cooldown = settings.notify_cooldown_hours * 3600
@@ -107,12 +185,34 @@ def notify(db: Database, settings: Settings, sources: list[Source],
         lines.append(_("… und {n} weitere", n=len(fresh) - 10))
     title = settings.app_title or "mailreports"
     title += ": " + (_("DMARC-Fehlschläge") if fresh[0].severity == 2 else _("Auffälligkeiten"))
-    try:
-        send_pushover(settings, title, "\n".join(lines))
-    except (OSError, RuntimeError, ValueError) as exc:
-        log.warning("notification failed: %s", exc)
-        db.set_meta("last_notify_error", str(exc)[:500])
+    if not send_all(db, settings, title, "\n".join(lines), {"findings": [f.line for f in fresh]}):
         return 0
     db.mark_notified([f.key for f in fresh])
-    db.set_meta("last_notify_error", "")
     return len(fresh)
+
+
+def weekly_digest(db: Database, settings: Settings, sources: list[Source], tz) -> str:
+    """Text of the weekly summary (last 7 days)."""
+    from . import queries
+    i18n.set_language(settings.default_language or i18n.DEFAULT)
+    lines = [_("Zusammenfassung der letzten 7 Tage"), ""]
+    summaries = queries.domain_summaries(db, 7, tz, settings.domains or None)
+    if not summaries:
+        lines.append(_("Keine Berichte eingegangen."))
+    for s in summaries:
+        rate = f"{s.rate:.1f} %" if s.rate is not None else "–"
+        lines.append(_("{domain}: {n} E-Mails, DMARC bestanden {rate}, nicht bestanden {failed}",
+                       domain=s.domain, n=s.messages, rate=rate, failed=s.failed))
+        if s.tls_success or s.tls_failure:
+            lines.append("  " + _("TLS: {ok} erfolgreich, {bad} fehlgeschlagen", ok=s.tls_success, bad=s.tls_failure))
+    unknown = [r for r in queries.sources_for(db, sources, 7) if r.kind == "unknown"]
+    if unknown:
+        lines += ["", _("Unbekannte Absender: {n}", n=len(unknown))]
+        for r in unknown[:5]:
+            lines.append(f"  {r.ip} ({r.messages}) {r.info['ptr'] if r.info and r.info['ptr'] else ''}".rstrip())
+    return "\n".join(lines)
+
+
+def send_digest(db: Database, settings: Settings, sources: list[Source], tz) -> bool:
+    title = (settings.app_title or "mailreports") + ": " + _("Wochenübersicht")
+    return send_all(db, settings, title, weekly_digest(db, settings, sources, tz), {"digest": True})

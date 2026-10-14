@@ -32,12 +32,20 @@ XML and result codes.
   selector), forwarders and unknown senders, with reverse DNS and optional GeoIP and network
   (AS) data
 - **Report details** with every DKIM signature and selector, the SPF check, Header From and
-  Envelope From
+  Envelope From; the original file as download and all records as CSV export
+- **DNS check** of your domains: DMARC, SPF (incl. the 10-lookup limit), DKIM key lengths,
+  MTA-STS, TLS-RPT, MX and DANE
+- **Policy recommendation:** when it is safe to move to `p=quarantine` or `p=reject`, and
+  what to fix first
+- **A page per sending IP** with history and all records, and a search across IP addresses,
+  host names, domains, reporters and DKIM selectors
 - **IMAP fetch** over TLS; reports as `.xml`, `.json`, `.gz` or `.zip`, whatever the MIME type.
   Emails are flagged or moved, never deleted, or left completely untouched in read-only mode.
   Duplicate reports are recognised.
-- **Push notifications** via Pushover for new failures, unknown senders and TLS problems,
-  at most once a day per finding
+- **Notifications** via Pushover, ntfy, webhook or email for new failures, unknown senders and
+  TLS problems, at most once a day per finding, plus an optional **weekly summary**
+- **Key figures** as JSON and in the Prometheus format for dashboards
+- **Retention:** reports older than a set number of days are deleted automatically
 - **User accounts** with administrator and read-only roles, **two-factor sign-in** with an
   authenticator app and recovery codes, **passkeys and security keys**, **single sign-on**
   through an OpenID Connect provider (e.g. Authelia) and a sign-in log – or sign-in through
@@ -45,7 +53,8 @@ XML and result codes.
 - **Secrets from files** (`IMAP_PASSWORD_FILE`, `PUSHOVER_TOKEN_FILE`, …) for Docker secrets
 - **Upload and import** of older report files, **help pages** on SPF, DKIM, DMARC, alignment
   and TLS reporting
-- **German and English**, light and dark theme, works on phones
+- **Six languages** (English, German, French, Spanish, Italian, Dutch), light and dark theme,
+  works on phones
 - **Small and easy to run:** one container, one SQLite file, runs as a non-root user with a
   read-only file system and a built-in health check
 

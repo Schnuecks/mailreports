@@ -7,6 +7,7 @@ import json
 import sqlite3
 import threading
 import time
+import zlib
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -90,6 +91,13 @@ CREATE TABLE IF NOT EXISTS tls_failures (
     failure_reason_code TEXT
 );
 CREATE INDEX IF NOT EXISTS tls_failures_policy ON tls_failures (policy_id);
+
+CREATE TABLE IF NOT EXISTS raw_reports (
+    kind TEXT NOT NULL,               -- dmarc or tls
+    report_id INTEGER NOT NULL,
+    data BLOB NOT NULL,               -- original file, zlib-compressed
+    PRIMARY KEY (kind, report_id)
+);
 
 CREATE TABLE IF NOT EXISTS mails (
     id INTEGER PRIMARY KEY,
@@ -259,7 +267,7 @@ class Database:
                 (message_id, subject, sender, status, detail, int(time.time())))
             return cur.lastrowid
 
-    def add_dmarc(self, rep: DmarcReport, mail_id: int | None = None) -> int | None:
+    def add_dmarc(self, rep: DmarcReport, mail_id: int | None = None, raw: bytes = b"") -> int | None:
         """Store a report; None if it is already known (same organisation and report id)."""
         with _lock, self.connect() as con:
             cur = con.execute(
@@ -273,6 +281,7 @@ class Database:
             if cur.rowcount == 0:
                 return None
             rid = cur.lastrowid
+            self._store_raw(con, "dmarc", rid, raw)
             con.executemany(
                 """INSERT INTO dmarc_records
                    (report_id, source_ip, count, disposition, dkim_eval, spf_eval, dmarc_pass,
@@ -283,7 +292,7 @@ class Database:
                   json.dumps(r.reasons), json.dumps(r.dkim), json.dumps(r.spf)) for r in rep.records])
             return rid
 
-    def add_tls(self, rep: TlsReport, mail_id: int | None = None) -> int | None:
+    def add_tls(self, rep: TlsReport, mail_id: int | None = None, raw: bytes = b"") -> int | None:
         with _lock, self.connect() as con:
             cur = con.execute(
                 """INSERT OR IGNORE INTO tls_reports
@@ -294,6 +303,7 @@ class Database:
             if cur.rowcount == 0:
                 return None
             rid = cur.lastrowid
+            self._store_raw(con, "tls", rid, raw)
             for pol in rep.policies:
                 pid = con.execute(
                     """INSERT INTO tls_policies
@@ -310,6 +320,44 @@ class Database:
                       f.receiving_mx_helo, f.receiving_ip, f.additional_information, f.failure_reason_code)
                      for f in pol.failures])
             return rid
+
+    @staticmethod
+    def _store_raw(con, kind: str, rid: int, raw: bytes) -> None:
+        if raw:
+            con.execute("INSERT OR REPLACE INTO raw_reports VALUES (?, ?, ?)", (kind, rid, zlib.compress(raw, 9)))
+
+    def has_raw(self, kind: str, rid: int) -> bool:
+        with self.connect() as con:
+            row = con.execute("SELECT 1 FROM raw_reports WHERE kind = ? AND report_id = ?", (kind, rid)).fetchone()
+        return row is not None
+
+    def raw_report(self, kind: str, rid: int) -> bytes | None:
+        with self.connect() as con:
+            row = con.execute("SELECT data FROM raw_reports WHERE kind = ? AND report_id = ?", (kind, rid)).fetchone()
+        return zlib.decompress(row[0]) if row else None
+
+    def housekeeping(self, retention_days: int) -> dict:
+        """Deletes old data. retention_days 0 keeps reports forever."""
+        now = int(time.time())
+        out = {"dmarc": 0, "tls": 0}
+        with self.connect() as con:
+            if retention_days > 0:
+                cutoff = now - retention_days * 86400
+                out["dmarc"] = con.execute("DELETE FROM dmarc_reports WHERE date_end < ?", (cutoff,)).rowcount
+                out["tls"] = con.execute("DELETE FROM tls_reports WHERE date_end < ?", (cutoff,)).rowcount
+            for kind, table in (("dmarc", "dmarc_reports"), ("tls", "tls_reports")):
+                con.execute(f"DELETE FROM raw_reports WHERE kind = ? AND report_id NOT IN (SELECT id FROM {table})",
+                            (kind,))
+            con.execute("DELETE FROM mails WHERE processed_at < ?", (now - 180 * 86400,))
+            con.execute("DELETE FROM login_events WHERE created_at < ?", (now - 365 * 86400,))
+            con.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
+            con.execute("DELETE FROM pending_logins WHERE expires_at < ?", (now,))
+            con.execute("DELETE FROM webauthn_challenges WHERE expires_at < ?", (now,))
+            con.execute("DELETE FROM oidc_flows WHERE expires_at < ?", (now,))
+            con.execute("""DELETE FROM ip_info WHERE updated_at < ? AND ip NOT IN (
+                SELECT source_ip FROM dmarc_records UNION SELECT sending_mta_ip FROM tls_failures)""",
+                        (now - 30 * 86400,))
+        return out
 
     # ------------------------------------------------------------ IP information
 

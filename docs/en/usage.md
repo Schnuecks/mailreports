@@ -10,12 +10,26 @@ that failed DMARC, merged per domain and sending IP, in plain words.
 Each card leads to the **domain page** with the published policy explained, the history,
 the most frequent sending IPs, TLS results and the latest reports.
 
+## DNS check and policy recommendation
+
+The domain page has a button **Check DNS**. It looks up the records that are published right
+now and points out problems: the DMARC record (policy, report address and its authorisation
+at another domain), SPF (final `all`, the limit of 10 DNS lookups), every DKIM selector seen in
+the reports with its key length, MX with DANE/TLSA, MTA-STS (mode and whether every MX is in
+the policy) and TLS-RPT. Results are kept for 10 minutes.
+
+The card **Recommendation** evaluates the last 30 days: if all known sources pass DMARC and no
+unknown source passes, it suggests the next stricter policy (`p=none` → `p=quarantine` →
+`p=reject`) including the record; otherwise it lists what to fix first.
+
 ## DMARC reports
 
 The list can be filtered by domain, reporting organisation and "only with failures". A
 report shows each of its records twice: first as a sentence ("These 12 emails came from …"),
 then in detail with the sending IP, reverse DNS, country and network, Header From and
-Envelope From, every DKIM signature with its selector, and the SPF check.
+Envelope From, every DKIM signature with its selector, and the SPF check. The original file can
+be downloaded from the report page, and the list exports all records of the filtered reports
+as CSV.
 
 Good to know when reading reports:
 
@@ -36,6 +50,10 @@ All sending IPs of the period with their classification:
 | Unknown | everything else |
 
 Known sources are shown with their name from `sources.toml`; hover over it to see the type.
+
+Every IP address links to its own page with history, classification, reverse DNS, country and
+network and all its records. The search field at the top finds IP addresses, host names,
+domains, reporting organisations, report IDs and DKIM selectors.
 
 An **unknown sender that passes DMARC** is usually a service you forgot to list. An
 **unknown sender that fails** is usually someone abusing your domain – that is what DMARC

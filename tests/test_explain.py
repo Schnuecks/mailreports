@@ -78,6 +78,7 @@ def test_english():
 def test_translations_keep_placeholders():
     import re
 
-    from mailreports.i18n import catalog
-    for key, value in catalog("en").items():
-        assert set(re.findall(r"\{\w+\}", key)) == set(re.findall(r"\{\w+\}", value)), key
+    from mailreports.i18n import LANGUAGES, catalog
+    for lang in LANGUAGES:
+        for key, value in catalog(lang).items():
+            assert set(re.findall(r"\{\w+\}", key)) == set(re.findall(r"\{\w+\}", value)), (lang, key)

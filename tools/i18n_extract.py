@@ -57,6 +57,12 @@ def main() -> int:
         print(json.dumps({k: "" for k in sorted(keys)}, ensure_ascii=False, indent=1))
         return 0
     failed = False
+    sys.path.insert(0, str(ROOT))
+    from mailreports.i18n import FALLBACK, LANGUAGES
+    for code in LANGUAGES:
+        if code != FALLBACK and not (PKG / "locales" / f"{code}.json").exists():
+            print(f"{code}.json: missing file")
+            failed = True
     for path in sorted((PKG / "locales").glob("*.json")):
         catalog = json.loads(path.read_text(encoding="utf-8"))
         missing = sorted(k for k in keys if not catalog.get(k))

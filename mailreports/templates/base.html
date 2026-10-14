@@ -15,23 +15,31 @@
     <img src="{{ logo_url or '/static/icon.svg' }}" alt="" width="34" height="34">
     <span>{{ app_title or "mailreports" }}</span>
   </a>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="{{ _('Menü') }}">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="menu" id="menu">
   {% if not (accounts_enabled and not account) %}
   <nav class="main-nav" aria-label="{{ _('Hauptmenü') }}">
     <a href="/?days={{ days }}" {% if nav == 'overview' or nav == 'domain' %}aria-current="page"{% endif %}>{{ _("Übersicht") }}</a>
     <a href="/reports?days={{ days }}" {% if nav in ('reports', 'report') %}aria-current="page"{% endif %}>{{ _("DMARC") }}</a>
     <a href="/tls?days={{ days }}" {% if nav in ('tls', 'tls_report') %}aria-current="page"{% endif %}>{{ _("TLS") }}</a>
     <a href="/sources?days={{ days }}" {% if nav == 'sources' %}aria-current="page"{% endif %}>{{ _("Absender") }}</a>
-    <a href="/help" {% if nav == 'help' %}aria-current="page"{% endif %}>{{ _("Hilfe") }}</a>
     <a href="/status" {% if nav == 'status' %}aria-current="page"{% endif %}>{{ _("Status") }}</a>
     {% if accounts_enabled and is_admin %}<a href="/users" {% if nav in ('users', 'user', 'sign_ins') %}aria-current="page"{% endif %}>{{ _("Benutzer") }}</a>{% endif %}
   </nav>
   {% endif %}
   <div class="top-right">
+    {% if not (accounts_enabled and not account) %}<form class="top-search" method="get" action="/search" role="search">
+      <input type="search" name="q" placeholder="{{ _('Suchen') }}" aria-label="{{ _('Suchen') }}" maxlength="100">
+    </form>
+    <a class="help-link" href="/help" title="{{ _('Hilfe') }}" aria-label="{{ _('Hilfe') }}" {% if nav == 'help' %}aria-current="page"{% endif %}>?</a>{% endif %}
     {% if account %}
     <a class="user" href="/account" title="{{ _('Konto') }}" {% if nav in ('account', 'totp_setup', 'recovery_codes') %}aria-current="page"{% endif %}>{{ user }}</a>
     <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike">{{ _("Abmelden") }}</button></form>
     {% elif user %}<span class="user" title="{{ _('Angemeldet') }}">{{ user }}</span>{% endif %}
     <span class="langs">{% for code, name in languages.items() %}<a href="/lang/{{ code }}" title="{{ name }}" {% if code == current_language() %}aria-current="true"{% endif %}>{{ code|upper }}</a>{% endfor %}</span>
+  </div>
   </div>
 </header>
 <main>
@@ -39,6 +47,7 @@
 </main>
 <footer class="foot">
   <span>mailreports {{ version }}</span>
+  · <a href="/help">{{ _("Hilfe") }}</a>
   {% if source_url %}· <a href="{{ source_url }}" rel="noopener">{{ _("Quellcode auf GitHub") }}</a>{% endif %}
 </footer>
 </body>

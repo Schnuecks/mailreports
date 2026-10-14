@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Suche") }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Suche") }}</h1></div>
+<form class="filters card" method="get" action="/search" role="search">
+  <label class="grow">{{ _("IP-Adresse, Hostname, Domain, Berichtersteller, Bericht-ID oder DKIM-Selektor") }}
+    <input type="search" name="q" value="{{ q }}" minlength="2" maxlength="100" autofocus>
+  </label>
+  <button class="btn">{{ _("Suchen") }}</button>
+</form>
+{% if q|length >= 2 %}
+<section class="card">
+  <h2>{{ _("Absender") }} <small>· {{ results.ips|length }}</small></h2>
+  {% if results.ips %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Hostname") }}</th><th class="num">{{ _("E-Mails") }}</th><th>{{ _("Zuletzt gemeldet") }}</th></tr></thead>
+    <tbody>{% for r in results.ips %}
+      <tr><td><a href="/sources/{{ r.ip }}?days=365"><code>{{ r.ip }}</code></a></td><td><small>{{ r.ptr or "–" }}</small></td>
+      <td class="num">{{ num(r.messages) }}</td><td>{{ fmt.date(r.last_seen) }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">{{ _("Keine Treffer.") }}</p>{% endif %}
+</section>
+<section class="card">
+  <h2>{{ _("DMARC-Berichte") }} <small>· {{ results.reports|length }}</small></h2>
+  {% if results.reports %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th>{{ _("Bericht-ID") }}</th></tr></thead>
+    <tbody>{% for r in results.reports %}
+      <tr><td><a href="/reports/{{ r.id }}">{{ fmt.range(r.date_begin, r.date_end) }}</a></td><td>{{ r.domain }}</td><td>{{ r.org_name }}</td><td><small>{{ r.report_id }}</small></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">{{ _("Keine Treffer.") }}</p>{% endif %}
+</section>
+<section class="card">
+  <h2>{{ _("TLS-Berichte") }} <small>· {{ results.tls|length }}</small></h2>
+  {% if results.tls %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Berichtet von") }}</th><th>{{ _("Bericht-ID") }}</th></tr></thead>
+    <tbody>{% for r in results.tls %}
+      <tr><td><a href="/tls/{{ r.id }}">{{ fmt.range(r.date_begin, r.date_end) }}</a></td><td>{{ r.org_name }}</td><td><small>{{ r.report_id }}</small></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">{{ _("Keine Treffer.") }}</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

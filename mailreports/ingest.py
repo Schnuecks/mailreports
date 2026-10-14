@@ -49,13 +49,13 @@ def ingest_payload(db: Database, payload: parsing.Payload, mail_id: int | None =
         kind = parsing.kind_of(f.data)
         try:
             if kind == "dmarc":
-                rid = db.add_dmarc(parsing.parse_dmarc(f.data), mail_id)
+                rid = db.add_dmarc(parsing.parse_dmarc(f.data), mail_id, f.data)
                 if rid is None:
                     out.duplicates += 1
                 else:
                     out.new_dmarc.append(rid)
             elif kind == "tls":
-                rid = db.add_tls(parsing.parse_tls(f.data), mail_id)
+                rid = db.add_tls(parsing.parse_tls(f.data), mail_id, f.data)
                 if rid is None:
                     out.duplicates += 1
                 else:

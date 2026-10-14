@@ -48,7 +48,7 @@
 {%- endmacro %}
 
 {% macro ip_cell(ip, info) -%}
-<div class="ip"><code>{{ ip }}</code>
+<div class="ip"><a href="/sources/{{ ip }}?days={{ days }}"><code>{{ ip }}</code></a>
 {% if info and info.ptr %}<small title="{{ _('Reverse DNS (PTR)') }}">{{ info.ptr }}{% if info.ptr_confirmed %} ✓{% endif %}</small>{% endif %}
 {% set o = ex.origin(info) %}{% if o %}<small>{{ o }}</small>{% endif %}
 </div>

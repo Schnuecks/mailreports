@@ -18,6 +18,7 @@ lesen:** `NAME_FILE=/pfad` hat Vorrang vor `NAME` – gedacht für Docker-Secret
 | `IMAP_ERROR_FOLDER` | – | Ordner für Mails ohne verwertbaren Bericht. Leer: Schlagwort `$MailreportsError`. |
 | `IMAP_READONLY` | `false` | `true`: Postfach nur lesend öffnen und nichts verändern (keine Markierungen, kein Verschieben); verarbeitete Mails merkt sich die Datenbank. Für den Betrieb neben einem anderen Programm, das dasselbe Postfach liest. |
 | `FETCH_INTERVAL` | 900 | Sekunden zwischen zwei Abrufen (mindestens 60) |
+| `RETENTION_DAYS` | 0 | Berichte löschen, die älter als so viele Tage sind (täglich geprüft); `0` behält sie dauerhaft. 400 behält gut ein Jahr. |
 
 Mails werden nie gelöscht. Mails mit einem der beiden Schlagwörter werden bei späteren
 Abrufen übersprungen. Ein schon gespeicherter Bericht (gleiche Organisation und Bericht-ID)
@@ -29,19 +30,30 @@ zählt als doppelt.
 |---|---|---|
 | `APP_TITLE` | `mailreports` | Name in der Kopfleiste und im Browser-Tab |
 | `LOGO_URL` | eingebautes Symbol | Logo (34 px in der Kopfleiste) und Favicon, z. B. eine HTTPS-Adresse |
-| `DEFAULT_LANGUAGE` | Browsersprache | `de` oder `en` |
+| `DEFAULT_LANGUAGE` | Browsersprache | `de`, `en`, `fr`, `es`, `it` oder `nl` |
 | `DOMAINS` | alle | Kommagetrennt: welche Domains die Übersicht zeigt, in dieser Reihenfolge |
 | `TZ` | `UTC` | Zeitzone für Datumsangaben, z. B. `Europe/Berlin` |
 | `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link zum Quellcode in der Fußzeile; leer blendet ihn aus |
 
 ## Benachrichtigungen
 
+Funde gehen an alle eingerichteten Kanäle.
+
 | Variable | Standard | Bedeutung |
 |---|---|---|
-| `PUSHOVER_TOKEN` | – | Pushover-Anwendungs-Token (oder `_FILE`) |
-| `PUSHOVER_USER` | – | Pushover-Benutzer- oder Gruppenschlüssel (oder `_FILE`) |
+| `PUSHOVER_TOKEN`, `PUSHOVER_USER` | – | Pushover-Anwendungs-Token und Benutzer- oder Gruppenschlüssel (oder `_FILE`) |
+| `NTFY_URL` | – | Adresse des ntfy-Themas, z. B. `https://ntfy.sh/mein-thema` |
+| `NTFY_TOKEN` | – | Zugriffstoken für ein geschütztes ntfy-Thema (oder `_FILE`) |
+| `WEBHOOK_URL` | – | Erhält einen JSON-POST mit `title`, `message`, `url` und `findings` |
+| `SMTP_HOST`, `SMTP_PORT` | –, 587 (465 bei ssl) | Mailserver für Benachrichtigungen per E-Mail |
+| `SMTP_SECURITY` | `starttls` | `starttls`, `ssl` oder `none` |
+| `SMTP_USER`, `SMTP_PASSWORD` | – | Anmeldung am Mailserver (oder `_FILE`) |
+| `SMTP_FROM` | – | Absenderadresse |
+| `NOTIFY_EMAIL` | – | Empfänger, kommagetrennt |
 | `NOTIFY_COOLDOWN_HOURS` | 24 | Derselbe Fund wird höchstens einmal in dieser Zeit gemeldet |
-| `BASE_URL` | – | Öffentliche Adresse, wird als Link an die Meldung gehängt |
+| `DIGEST` | `off` | `weekly`: Zusammenfassung der letzten 7 Tage an alle Kanäle |
+| `DIGEST_WEEKDAY` | `mon` | Tag der Zusammenfassung (`mon` … `sun`), versendet ab 8 Uhr Ortszeit |
+| `BASE_URL` | – | Öffentliche Adresse, wird als Link an die Nachrichten gehängt |
 
 Nach einem Abruf geht eine Meldung raus, wenn neue Berichte Mails enthalten, die DMARC
 verfehlt haben (außer erkannten Weiterleitungen), Absender, die bestanden haben, aber nicht
@@ -100,6 +112,16 @@ Beim Anbieter `PUBLIC_URL/oidc/callback` als Redirect-URI eintragen, mit den Sco
 | `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403. Am besten nur die Adresse des Proxys, nicht das ganze Netz (siehe [Installation](installation.md#3-hinter-einem-reverse-proxy-mit-anmeldung)). |
 
 `/healthz` ist für den Container-Healthcheck immer erreichbar.
+
+## Kennzahlen
+
+`/api/metrics` liefert die Kennzahlen je Domain für 7 und 30 Tage als JSON (E-Mails, bestanden,
+nicht bestanden, Bestehensquote, Quarantäne, abgewiesen, TLS-Verbindungen, unbekannte Quellen,
+Richtlinie) – geeignet für Dashboard-Widgets. `/metrics` liefert dasselbe im Prometheus-Textformat.
+
+| Variable | Standard | Bedeutung |
+|---|---|---|
+| `METRICS_TOKEN` | – | Mit Token lassen sich beide Adressen ohne Anmeldung abrufen: `Authorization: Bearer <token>` oder `?token=<token>`. Ohne Token nur für angemeldete Benutzer. |
 
 ## Nachschlagen und Speicher
 

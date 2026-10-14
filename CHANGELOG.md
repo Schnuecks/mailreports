@@ -2,6 +2,28 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.3.0
+
+- **DNS check** per domain: DMARC record (policy, report address and its authorisation at
+  another domain), SPF (final `all`, limit of 10 DNS lookups), DKIM selectors from the reports
+  with key length, MX with DANE/TLSA, MTA-STS (mode, MX coverage) and TLS-RPT
+- **Policy recommendation** on the domain page, based on the last 30 days: suggests the next
+  stricter policy with the record, or lists what to fix first
+- **Page per sending IP** with history, classification and all records; **search** across IP
+  addresses, host names, domains, reporters, report IDs and DKIM selectors
+- **Original reports** are stored (compressed) and can be downloaded; **CSV export** of all
+  records of the filtered reports (formula characters escaped)
+- **Retention:** `RETENTION_DAYS` deletes old reports daily; old mail logs, sign-in events,
+  expired sessions and unused IP data are cleaned up as well
+- **More notification channels:** ntfy (`NTFY_URL`), webhook (`WEBHOOK_URL`) and email
+  (`SMTP_*`, `NOTIFY_EMAIL`), next to Pushover; optional **weekly summary** (`DIGEST=weekly`)
+- **Key figures** at `/api/metrics` (JSON) and `/metrics` (Prometheus), optionally readable with
+  `METRICS_TOKEN`
+- **Six languages:** French, Spanish, Italian and Dutch added
+- The background job now runs without IMAP as well (housekeeping, weekly summary)
+- The help moved from the main menu to a "?" next to the search field and to the footer
+- On phones the menu, search, help, account and languages fold into a menu button
+
 ## 0.2.0
 
 - **User accounts** instead of the single password: administrator and read-only roles,

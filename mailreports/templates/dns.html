@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ _("DNS-Prüfung") }} · {{ domain }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("DNS-Prüfung") }} <small>· {{ domain }}</small></h1>
+  <div class="actions-row">
+    <a class="btn ghost" href="/domain/{{ domain }}">← {{ domain }}</a>
+    <a class="btn ghost" href="/domain/{{ domain }}/dns?refresh=1">{{ _("Neu prüfen") }}</a>
+  </div>
+</div>
+<p class="lead muted">{{ _("Aktuell veröffentlichte DNS-Einträge, abgefragt beim Laden der Seite (zwischengespeichert für 10 Minuten).") }}</p>
+<div class="grid two">
+{% for sec in sections %}
+  <section class="card dns-section">
+    <div class="card-head"><h2>{{ m.status_icon('ok' if sec.level in ('ok', 'info') else sec.level) }} {{ _(sec.title) }}</h2></div>
+    {% if sec.record %}<pre class="record">{{ sec.record }}</pre>{% endif %}
+    <ul class="findings">
+    {% for f in sec.findings %}<li class="f-{{ f.level }}">{{ _(f.text, **f.args) }}</li>{% endfor %}
+    </ul>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}
