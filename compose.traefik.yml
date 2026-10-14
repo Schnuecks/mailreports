@@ -1,6 +1,8 @@
 # Behind Traefik with a login middleware (forward auth, e.g. Authelia). The app trusts the
-# Remote-User header only because it is reachable from the proxy network alone:
-# no published port, TRUSTED_PROXIES limited to that network.
+# Remote-User header only because nobody but the proxy can reach it: no published port, and
+# TRUSTED_PROXIES set to the proxy's own address (for a proxy with network_mode: host, the
+# gateway of the proxy network). Trusting the whole network would let every container in it
+# send the header.
 services:
   mailreports:
     image: ghcr.io/schnuecks/mailreports:latest
@@ -13,7 +15,7 @@ services:
       PUSHOVER_USER_FILE: /run/secrets/pushover_user
       SOURCES_FILE: /config/sources.toml
       AUTH_HEADER: Remote-User
-      TRUSTED_PROXIES: 172.16.0.0/12      # the proxy network, adjust
+      TRUSTED_PROXIES: 172.20.0.5         # the proxy's address, adjust
     secrets: [imap_password, pushover_token, pushover_user]
     volumes:
       - ./data:/data

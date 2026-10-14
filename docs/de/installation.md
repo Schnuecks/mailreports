@@ -48,12 +48,18 @@ Anmeldung (Forward-Auth); die App prüft den Header, den der Proxy setzt:
 ```
 AUTH_HEADER=Remote-User        # Anfragen ohne diesen Header werden abgewiesen (401)
 ALLOWED_GROUPS=admins          # optional, verglichen mit Remote-Groups
-TRUSTED_PROXIES=172.16.0.0/12  # nur Anfragen aus dem Proxy-Netz annehmen
+TRUSTED_PROXIES=172.20.0.5     # nur Anfragen vom Proxy selbst annehmen
 ```
 
-Dem Header kann man nur trauen, wenn niemand den Container direkt erreicht: keinen Port
-veröffentlichen und `TRUSTED_PROXIES` auf das Proxy-Netz setzen. `compose.traefik.yml` zeigt
-ein vollständiges Beispiel. Der angezeigte Name kommt aus `Remote-Name`, falls gesetzt.
+Dem Header kann man nur trauen, wenn sonst niemand den Container erreicht: keinen Port
+veröffentlichen und `TRUSTED_PROXIES` **so eng wie möglich setzen – auf die Adresse des
+Proxys, nicht auf das ganze Docker-Netz.** Sonst könnte jeder Container im vertrauten Netz
+den Anmelde-Header selbst mitschicken. Von welcher Adresse die Anfragen wirklich kommen, steht
+im Container-Log (`docker compose logs mailreports` zeigt bei jeder Anfrage die Absenderadresse):
+bei einem Proxy-Container ist es seine IP im gemeinsamen Netz, bei einem Proxy mit
+`network_mode: host` das Gateway dieses Netzes (z. B. `172.20.0.1`). mailreports warnt beim
+Start im Log, wenn ein ganzes Netz als vertrauenswürdig eingetragen ist. `compose.traefik.yml`
+zeigt ein vollständiges Beispiel. Der angezeigte Name kommt aus `Remote-Name`, falls gesetzt.
 
 ## 4. GeoIP (optional)
 

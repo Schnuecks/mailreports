@@ -2,6 +2,21 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.1.1
+
+- Corrected wording and translations: "Im Klartext", consistent capitalisation of column
+  headings and labels, "emails" instead of "mails" in English, no doubled "DMARC passed"
+- Known senders are shown with their name only (the type appears on hover), percentages
+  like "0 %" instead of "0.0 %", daily reports show their day instead of a time range
+- For authorised services whose SPF passes for their own sender domain, the explanation no
+  longer suggests changing your SPF record
+- Menu on phones wraps instead of being cut off
+- Link "Source code on GitHub" in the footer, configurable with `SOURCE_URL`
+- Warning in the log at start when `TRUSTED_PROXIES` contains a whole network instead of
+  single addresses
+- Docs and `compose.traefik.yml`: set `TRUSTED_PROXIES` to the proxy's own address (the
+  gateway for a proxy with `network_mode: host`), not to the whole Docker network
+
 ## 0.1.0
 
 First version.

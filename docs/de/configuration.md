@@ -32,6 +32,7 @@ zählt als doppelt.
 | `DEFAULT_LANGUAGE` | Browsersprache | `de` oder `en` |
 | `DOMAINS` | alle | Kommagetrennt: welche Domains die Übersicht zeigt, in dieser Reihenfolge |
 | `TZ` | `UTC` | Zeitzone für Datumsangaben, z. B. `Europe/Berlin` |
+| `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link zum Quellcode in der Fußzeile; leer blendet ihn aus |
 
 ## Benachrichtigungen
 
@@ -53,7 +54,7 @@ Domain und TLS-Fehlertyp).
 |---|---|---|
 | `AUTH_HEADER` | – | Header mit dem Benutzernamen vom Anmelde-Proxy, z. B. `Remote-User`. Wenn gesetzt, bekommen Anfragen ohne ihn 401. |
 | `ALLOWED_GROUPS` | – | Kommagetrennt; mindestens eine muss in `Remote-Groups` stehen |
-| `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403 |
+| `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403. Am besten nur die Adresse des Proxys, nicht das ganze Netz (siehe [Installation](installation.md#3-hinter-einem-reverse-proxy-mit-anmeldung)). |
 
 `/healthz` ist für den Container-Healthcheck immer erreichbar.
 

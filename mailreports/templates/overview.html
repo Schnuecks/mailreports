@@ -36,7 +36,7 @@
       <div class="big">{{ m.rate(s.rate) }}<span class="lbl">{{ _("DMARC bestanden") }}</span></div>
       <dl>
         <div><dt>{{ _("Mails") }}</dt><dd>{{ num(s.messages) }}</dd></div>
-        <div><dt>{{ _("durchgefallen") }}</dt><dd {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</dd></div>
+        <div><dt>{{ _("Durchgefallen") }}</dt><dd {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</dd></div>
         <div><dt>{{ _("Berichte") }}</dt><dd>{{ num(s.reports) }}</dd></div>
       </dl>
     </div>

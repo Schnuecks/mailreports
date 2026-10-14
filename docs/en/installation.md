@@ -48,12 +48,17 @@ mailreports has no user management of its own. Put it behind a reverse proxy wit
 ```
 AUTH_HEADER=Remote-User        # requests without it are refused (401)
 ALLOWED_GROUPS=admins          # optional, compared with Remote-Groups
-TRUSTED_PROXIES=172.16.0.0/12  # only accept requests from the proxy network
+TRUSTED_PROXIES=172.20.0.5     # only accept requests from the proxy itself
 ```
 
-The header can only be trusted if nobody can reach the container directly: do not publish
-the port, and set `TRUSTED_PROXIES` to the proxy network. `compose.traefik.yml` shows a
-complete example. The display name comes from `Remote-Name`, if set.
+The header can only be trusted if nobody else can reach the container: do not publish the
+port, and set `TRUSTED_PROXIES` **as narrow as possible – the proxy's own address, not the
+whole Docker network.** Every container in a trusted network could otherwise send the login
+header itself. Find the address the requests really come from in the container log
+(`docker compose logs mailreports` shows the client address of every request): for a proxy
+container that is its IP in the shared network, for a proxy with `network_mode: host` it is
+the gateway of that network (e.g. `172.20.0.1`). mailreports logs a warning at start if a
+whole network is trusted. `compose.traefik.yml` shows a complete example. The display name comes from `Remote-Name`, if set.
 
 ## 4. GeoIP (optional)
 
@@ -77,7 +82,7 @@ Reports saved elsewhere can be uploaded on the status page, or imported on the c
 docker compose exec mailreports python -m mailreports import /data/old-reports/
 ```
 
-Files may be `.xml`, `.json`, `.gz`, `.zip` or whole mails (`.eml`). Known reports are skipped.
+Files may be `.xml`, `.json`, `.gz`, `.zip` or whole emails (`.eml`). Known reports are skipped.
 
 ## Update
 

@@ -33,10 +33,12 @@ Alle sendenden IPs des Zeitraums mit ihrer Einordnung:
 
 | Einordnung | Bedeutung |
 |---|---|
-| eigener Server | passt zu einem `own`-Eintrag in `sources.toml` |
-| beauftragter Dienst | passt zu einem `relay`-Eintrag, z. B. über den DKIM-Selektor |
+| Eigener Server | passt zu einem `own`-Eintrag in `sources.toml` |
+| Beauftragter Dienst | passt zu einem `relay`-Eintrag, z. B. über den DKIM-Selektor |
 | Weiterleitung | ein `forwarder`-Eintrag, ein Weiterleitungs-Hinweis im Bericht oder gültiges DKIM bei fehlgeschlagenem SPF |
-| unbekannt | alles andere |
+| Unbekannt | alles andere |
+
+Bekannte Quellen erscheinen mit ihrem Namen aus `sources.toml`; mit der Maus darüber zeigt sich die Art.
 
 Ein **unbekannter Absender, der DMARC besteht**, ist meist ein Dienst, den du noch nicht
 eingetragen hast. Ein **unbekannter Absender, der durchfällt**, ist meist jemand, der deine

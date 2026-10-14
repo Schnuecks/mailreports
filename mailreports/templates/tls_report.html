@@ -8,7 +8,7 @@
 </div>
 <section class="card meta">
   <dl class="kv">
-    <dt>{{ _("Zeitraum") }}</dt><dd>{{ fmt.datetime(rep.date_begin) }} – {{ fmt.datetime(rep.date_end) }}</dd>
+    <dt>{{ _("Zeitraum") }}</dt><dd>{{ fmt.range(rep.date_begin, rep.date_end) }}</dd>
     <dt>{{ _("Berichtet von") }}</dt><dd>{{ rep.org_name }}{% if rep.contact %} ({{ rep.contact }}){% endif %}</dd>
     <dt>{{ _("Bericht-ID") }}</dt><dd><code>{{ rep.report_id }}</code></dd>
   </dl>
