@@ -38,10 +38,20 @@ class Outcome:
         return "error" if self.errors else "empty"
 
 
-def ingest_payload(db: Database, payload: parsing.Payload, mail_id: int | None = None) -> Outcome:
+def _ours(domain: str, domains: list[str] | None) -> bool:
+    """With DOMAINS set, reports for other domains are not stored: the report address is public
+    and anybody can send made-up reports to it."""
+    if not domains:
+        return True
+    domain = domain.lower().rstrip(".")
+    return any(domain == d or domain.endswith("." + d) for d in domains)
+
+
+def ingest_payload(db: Database, payload: parsing.Payload, mail_id: int | None = None,
+                   budget: parsing.Budget | None = None, domains: list[str] | None = None) -> Outcome:
     out = Outcome()
     try:
-        files = parsing.unpack(payload)
+        files = parsing.unpack(payload, budget=budget)
     except parsing.ReportError as exc:
         out.errors.append(f"{payload.name}: {exc}")
         return out
@@ -49,13 +59,21 @@ def ingest_payload(db: Database, payload: parsing.Payload, mail_id: int | None =
         kind = parsing.kind_of(f.data)
         try:
             if kind == "dmarc":
-                rid = db.add_dmarc(parsing.parse_dmarc(f.data), mail_id, f.data)
+                report = parsing.parse_dmarc(f.data)
+                if not _ours(report.domain, domains):
+                    out.errors.append(f"{f.name}: report for {report.domain[:100]}, not in DOMAINS")
+                    continue
+                rid = db.add_dmarc(report, mail_id, f.data)
                 if rid is None:
                     out.duplicates += 1
                 else:
                     out.new_dmarc.append(rid)
             elif kind == "tls":
-                rid = db.add_tls(parsing.parse_tls(f.data), mail_id, f.data)
+                tls = parsing.parse_tls(f.data)
+                if not any(_ours(p.policy_domain, domains) for p in tls.policies):
+                    out.errors.append(f"{f.name}: TLS report for other domains, not in DOMAINS")
+                    continue
+                rid = db.add_tls(tls, mail_id, f.data)
                 if rid is None:
                     out.duplicates += 1
                 else:
@@ -67,7 +85,7 @@ def ingest_payload(db: Database, payload: parsing.Payload, mail_id: int | None =
     return out
 
 
-def ingest_mail(db: Database, raw: bytes) -> Outcome:
+def ingest_mail(db: Database, raw: bytes, domains: list[str] | None = None) -> Outcome:
     """Store all reports of one mail and log the mail."""
     try:
         msg = parsing.parse_mail(raw)
@@ -81,8 +99,9 @@ def ingest_mail(db: Database, raw: bytes) -> Outcome:
         return Outcome(errors=[f"unreadable mail: {exc}"])
     mail_id = db.log_mail(message_id, subject[:300], sender[:300], "pending", "")
     out = Outcome()
+    budget = parsing.Budget()   # one limit for all attachments of the mail
     for payload in payloads:
-        out.merge(ingest_payload(db, payload, mail_id))
+        out.merge(ingest_payload(db, payload, mail_id, budget, domains))
     if not payloads:
         out.errors.append("no attachment")
     detail = "; ".join(out.errors)[:2000]

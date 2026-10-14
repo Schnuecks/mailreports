@@ -81,3 +81,30 @@ def test_attachments_by_content_type_and_name():
     msg.add_attachment(b"hello", maintype="image", subtype="png", filename="logo.png")
     found = parsing.attachments(parsing.parse_mail(msg.as_bytes()))
     assert [p.name for p in found] == ["r.xml.gz", "t.json"]
+
+
+def test_unpack_budget_spans_members_and_attachments(monkeypatch):
+    """Many small gzip files in a zip must not add up beyond the limit (memory bomb by mail)."""
+    import gzip as _gzip
+    import io as _io
+    import zipfile as _zipfile
+    monkeypatch.setattr(parsing, "MAX_UNPACKED", 5000)
+    member = _gzip.compress(b"<" + b"a" * 1500)
+    buf = _io.BytesIO()
+    with _zipfile.ZipFile(buf, "w") as z:
+        for i in range(10):
+            z.writestr(f"r{i}.xml.gz", member)
+    with pytest.raises(parsing.ReportError):
+        parsing.unpack(parsing.Payload("bomb.zip", buf.getvalue()))
+    # too many files in one archive
+    buf = _io.BytesIO()
+    with _zipfile.ZipFile(buf, "w") as z:
+        for i in range(parsing.MAX_MEMBERS + 1):
+            z.writestr(f"r{i}.xml", b"<x/>")
+    with pytest.raises(parsing.ReportError, match="files"):
+        parsing.unpack(parsing.Payload("many.zip", buf.getvalue()))
+    # the budget is shared: two attachments of 3000 bytes each exceed 5000 together
+    budget = parsing.Budget()
+    parsing.unpack(parsing.Payload("a.gz", _gzip.compress(b"<" + b"a" * 2999)), budget=budget)
+    with pytest.raises(parsing.ReportError):
+        parsing.unpack(parsing.Payload("b.gz", _gzip.compress(b"<" + b"a" * 2999)), budget=budget)

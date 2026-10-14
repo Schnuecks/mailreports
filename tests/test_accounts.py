@@ -289,8 +289,9 @@ def test_sso_links_existing_account(tmp_path, provider):
     client, svc = app_client(tmp_path, admin_password=ADMIN_PW, oidc_issuer=ISSUER, oidc_client_id="mailreports",
                              oidc_admin_group="admins")
     with svc.db.connect() as con:
-        accounts.create_user(con, "reader", USER_PW)
+        accounts.create_user(con, "reader", USER_PW, email="reader@example.com")
     assert "Mit SSO anmelden" in client.get("/login").text
+    provider.who["email_verified"] = True
     r = sso(client, provider)
     assert r.status_code == 303 and r.headers["location"] == "/sources"
     assert client.get("/users").status_code == 403
@@ -411,3 +412,29 @@ def test_base_url_falls_back_to_public_url(monkeypatch):
     assert config.load().base_url == "https://dmarc.example.org"
     monkeypatch.setenv("BASE_URL", "https://other.example.org")
     assert config.load().base_url == "https://other.example.org"
+
+
+def test_sso_never_matches_by_name_or_into_admin(tmp_path, provider):
+    """A provider name or address alone must not open an existing account, above all not an admin's."""
+    client, svc = app_client(tmp_path, admin_password=ADMIN_PW, oidc_issuer=ISSUER, oidc_client_id="mailreports")
+    with svc.db.connect() as con:
+        accounts.create_user(con, "reader", USER_PW)
+        con.execute("UPDATE users SET email = 'admin@example.com' WHERE username = 'admin'")
+    # same username, no verified email: no account (username matching is off by default)
+    assert sso(client, provider).status_code == 401
+    # the admin's name and even its verified address: still no account
+    provider.who.update(sub="u-2", preferred_username="admin", email="admin@example.com", email_verified=True)
+    assert sso(client, provider).status_code == 401
+    with svc.db.connect() as con:
+        assert con.execute("SELECT oidc_sub FROM users WHERE username = 'admin'").fetchone()[0] == ""
+    # with OIDC_LINK_USERNAME, ordinary accounts are matched by name
+    (tmp_path / "b").mkdir()
+    client2, svc2 = app_client(tmp_path / "b", admin_password=ADMIN_PW, oidc_issuer=ISSUER,
+                               oidc_client_id="mailreports", oidc_link_username=True)
+    with svc2.db.connect() as con:
+        accounts.create_user(con, "reader", USER_PW)
+    provider.who.update(sub="u-1", preferred_username="reader", email="", email_verified=False)
+    assert sso(client2, provider).status_code == 303
+    provider.who.update(sub="u-3", preferred_username="admin")
+    client2.cookies.clear()
+    assert sso(client2, provider).status_code == 401

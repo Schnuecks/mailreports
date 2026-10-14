@@ -86,7 +86,9 @@ Mailserver beschreiben. Dann `http://<server>:8080` öffnen und das erste Konto 
 Log (`docker compose logs mailreports`). Die ersten Berichte kommen innerhalb eines Tages. Aktualisieren: `docker compose pull && docker compose up -d`.
 
 Für den Zugriff über das Internet gehört es hinter einen Reverse-Proxy mit Anmeldung; siehe
-[Installation](docs/de/installation.md).
+[Installation](docs/de/installation.md). Berichte sind nicht signiert und die Berichtsadresse ist
+öffentlich, jeder kann also erfundene Berichte dorthin schicken: `DOMAINS` auf die eigenen Domains
+setzen, dann werden Berichte für andere Domains nicht gespeichert.
 
 ## Dokumentation
 

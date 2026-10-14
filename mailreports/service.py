@@ -31,6 +31,9 @@ class Service:
                         "e.g. PUBLIC_URL=https://dmarc.example.org")
         if s.public_url and not s.public_url.startswith(("https://", "http://localhost", "http://127.0.0.1")):
             log.warning("PUBLIC_URL %s does not use HTTPS; browsers allow passkeys only over HTTPS.", s.public_url)
+        if s.imap_enabled and s.imap_security == "none" and s.imap_host not in ("localhost", "127.0.0.1", "::1"):
+            log.warning("IMAP_SECURITY=none sends the IMAP password unencrypted to %s; use ssl or starttls.",
+                        s.imap_host)
         if s.oidc_issuer and not s.oidc_issuer.startswith("https://"):
             raise SystemExit("OIDC_ISSUER must be an https:// address.")
         self.limiter = accounts.LoginLimiter()

@@ -31,7 +31,7 @@ A report that is already stored (same organisation and report ID) counts as a du
 | `THEME` | neutral | Colour scheme: `neutral` (grey and blue) or `olive` (olive green); light and dark follow the device |
 | `LOGO_URL` | built-in icon | Logo (34 px in the header) and favicon, e.g. an HTTPS URL |
 | `DEFAULT_LANGUAGE` | browser language | `de`, `en`, `fr`, `es`, `it` or `nl` |
-| `DOMAINS` | all | Comma-separated: which domains the overview shows, in this order |
+| `DOMAINS` | all | Comma-separated: your domains, in the order of the overview. Reports for other domains are not stored (subdomains of yours are) – recommended, because anybody can send reports to the public report address |
 | `TZ` | `UTC` | Time zone for dates, e.g. `Europe/Berlin` |
 | `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link to the source code in the footer; empty hides it |
 
@@ -98,7 +98,12 @@ Five failed sign-ins per username (ten per address) block for 15 minutes. A sess
 | `OIDC_NAME` | `SSO` | Label of the button: "Sign in with …" |
 | `OIDC_ADMIN_GROUP` | – | Members of this group become administrators |
 | `OIDC_ALLOWED_GROUP` | – | Only members of this group (or the admin group) may sign in |
-| `OIDC_CREATE_USERS` | `false` | Create an account on first sign-in; otherwise only existing accounts (matched by username or verified email) can sign in |
+| `OIDC_CREATE_USERS` | `false` | Create an account on first sign-in; otherwise only existing accounts can sign in |
+| `OIDC_LINK_USERNAME` | `false` | Also match existing accounts by username. Only for providers where users cannot choose their own name |
+
+On the first sign-in, an existing account is matched by verified email address (and by username with
+`OIDC_LINK_USERNAME`). Administrator accounts are never matched automatically: an admin signs in with
+the password once and links the provider account under **Account → Single sign-on**.
 
 Register `PUBLIC_URL/oidc/callback` as redirect URI at the provider, with the scopes
 `openid profile email groups`.

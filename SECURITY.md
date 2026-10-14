@@ -22,8 +22,14 @@ mailreports reads emails from a mailbox that anyone on the internet can write to
 files are therefore treated as untrusted input:
 
 - XML is parsed with `defusedxml`; entity definitions and external references are refused.
-- Compressed files are unpacked with a size limit (50 MB) and a nesting limit, so zip and
-  gzip bombs are rejected.
+- Compressed files are unpacked with one size limit for the whole email (50 MB), at most 20
+  files per zip archive and a nesting limit, so zip and gzip bombs are rejected. Emails larger
+  than 25 MB are not downloaded at all.
+- Every email is marked as failed before it is processed and only marked as done afterwards,
+  so an email that crashes the process is not retried on every fetch.
+- With `DOMAINS` set, reports for other domains are not stored.
+- DMARC and TLS reports are not signed: anybody can send made-up reports to the public report
+  address. Treat unexpected findings with care and set `DOMAINS`.
 - All text from reports is escaped in the pages; the page uses a strict Content Security
   Policy without inline code and loads nothing from third parties.
 - Emails are only read and flagged or moved, never deleted.
@@ -37,7 +43,8 @@ Access:
 - Every page requires a sign-in. Built-in accounts: passwords hashed with Argon2id; session
   tokens, setup and recovery codes stored only as SHA-256 hashes; HttpOnly session cookie
   (with the `__Host-` prefix over HTTPS); CSRF token on every form; failed sign-ins limited
-  per username and address; optional two-factor sign-in (TOTP, passkeys/WebAuthn) with
+  per username and address (behind a proxy from `TRUSTED_PROXIES`, the visitor's address
+  from `X-Forwarded-For` is used); optional two-factor sign-in (TOTP, passkeys/WebAuthn) with
   authenticator keys encrypted by `SECRET_KEY`; single sign-on with PKCE, nonce and a
   state cookie bound to the browser; a sign-in log. The first account needs a setup code
   from the container log.

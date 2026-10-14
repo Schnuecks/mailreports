@@ -92,7 +92,7 @@ def create_app(service: Service | None = None) -> FastAPI:
             return await call_next(request)
         if settings.trusted_proxies:
             try:
-                addr = ipaddress.ip_address(web.client_ip(request))
+                addr = ipaddress.ip_address(web.peer_ip(request))
             except ValueError:
                 addr = None
             if addr is None or not any(addr in net for net in settings.trusted_proxies):
@@ -427,7 +427,7 @@ def create_app(service: Service | None = None) -> FastAPI:
             if len(data) > MAX_UPLOAD:
                 total.errors.append(f"{f.filename}: too large")
                 continue
-            total.merge(ingest_payload(svc.db, Payload(f.filename or "upload", data)))
+            total.merge(ingest_payload(svc.db, Payload(f.filename or "upload", data), domains=settings.domains))
         svc.after_import(total)
         return RedirectResponse(
             f"/status?uploaded={len(total.new_dmarc)}-{len(total.new_tls)}-{total.duplicates}-{len(total.errors)}",

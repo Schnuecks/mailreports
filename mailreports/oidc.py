@@ -177,16 +177,21 @@ def person(claims: dict[str, Any]) -> Person:
 
 
 def user_for(conn: sqlite3.Connection, cfg: Settings, who: Person) -> sqlite3.Row:
-    """Account of the person: by the permanent link, else by username or verified email
-    (and then link it), else create one if allowed."""
+    """Account of the person: by the permanent link, else by verified email (or, if allowed,
+    by username) and then link it, else create one if allowed.
+
+    Administrator accounts are never matched automatically: a provider that lets people pick
+    their own name or address could otherwise hand out an admin account. Admins link their
+    provider account themselves on the account page."""
     if cfg.oidc_allowed_group and cfg.oidc_allowed_group not in who.groups and cfg.oidc_admin_group not in who.groups:
         raise OidcError(NO_ACCOUNT)
     row = conn.execute("SELECT * FROM users WHERE oidc_sub = ?", (who.sub,)).fetchone()
-    if row is None and who.username:
-        row = conn.execute("SELECT * FROM users WHERE username = ? AND oidc_sub = ''", (who.username,)).fetchone()
     if row is None and who.email and who.email_verified:
-        row = conn.execute("SELECT * FROM users WHERE email = ? COLLATE NOCASE AND oidc_sub = ''",
+        row = conn.execute("SELECT * FROM users WHERE email = ? COLLATE NOCASE AND oidc_sub = '' AND is_admin = 0",
                            (who.email,)).fetchone()
+    if row is None and who.username and cfg.oidc_link_username:
+        row = conn.execute("SELECT * FROM users WHERE username = ? AND oidc_sub = '' AND is_admin = 0",
+                           (who.username,)).fetchone()
     if row is None:
         if not cfg.oidc_create_users or not who.username:
             raise OidcError(NO_ACCOUNT)

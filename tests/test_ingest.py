@@ -46,3 +46,14 @@ def test_broken_attachment_is_logged(service):
 def test_unreadable_mail_does_not_raise(service):
     out = ingest_mail(service.db, b"\x00\xff" * 10)
     assert out.status in ("error", "empty")
+
+
+def test_reports_for_other_domains_are_not_stored(service):
+    """The report address is public: with DOMAINS set, made-up reports for other domains are dropped."""
+    out = ingest_payload(service.db, Payload("a.xml", DMARC_XML), domains=["example.net"])
+    assert not out.new_dmarc and "not in DOMAINS" in out.errors[0]
+    out = ingest_payload(service.db, Payload("t.json", TLS_JSON), domains=["example.net"])
+    assert not out.new_tls and out.errors
+    # own domain (and subdomains) are stored
+    assert ingest_payload(service.db, Payload("a.xml", DMARC_XML), domains=["org"]).new_dmarc
+    assert ingest_payload(service.db, Payload("t.json", TLS_JSON), domains=["example.org"]).new_tls
