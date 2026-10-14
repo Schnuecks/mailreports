@@ -2,7 +2,7 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.4.2
 
 - **Users** and the **sign-in log** moved into **Settings** as tabs next to the notifications;
   the main menu has one entry less
