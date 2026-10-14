@@ -27,6 +27,9 @@
   </nav>
   {% endif %}
   <div class="top-right">
+    {% if not (accounts_enabled and not account) %}<form class="top-search" method="get" action="/search" role="search">
+      <input type="search" name="q" placeholder="{{ _('Suchen') }}" aria-label="{{ _('Suchen') }}" maxlength="100">
+    </form>{% endif %}
     {% if account %}
     <a class="user" href="/account" title="{{ _('Konto') }}" {% if nav in ('account', 'totp_setup', 'recovery_codes') %}aria-current="page"{% endif %}>{{ user }}</a>
     <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike">{{ _("Abmelden") }}</button></form>

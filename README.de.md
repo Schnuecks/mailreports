@@ -32,12 +32,23 @@ haben – statt XML und Fehlercodes.
   DKIM-Selektor), Weiterleitungen und Unbekannte, mit Reverse-DNS und optional Land und Netz
   (AS) per GeoIP
 - **Berichtsdetails** mit jeder DKIM-Signatur und jedem Selektor, der SPF-Prüfung,
-  Header-From und Envelope-From
+  Header-From und Envelope-From; die Originaldatei zum Herunterladen und alle Einträge als
+  CSV-Export
+- **DNS-Prüfung** der eigenen Domains: DMARC, SPF (inkl. der Grenze von 10 Abfragen),
+  DKIM-Schlüssellängen, MTA-STS, TLS-RPT, MX und DANE
+- **Empfehlung zur Richtlinie:** wann ein Wechsel auf `p=quarantine` oder `p=reject` sicher ist
+  und was vorher zu klären ist
+- **Eine Seite je sendender IP** mit Verlauf und allen Einträgen, dazu eine Suche über
+  IP-Adressen, Hostnamen, Domains, Berichtersteller und DKIM-Selektoren
 - **IMAP-Abruf** über TLS; Berichte als `.xml`, `.json`, `.gz` oder `.zip`, egal mit welchem
   MIME-Typ. Mails werden markiert oder verschoben, nie gelöscht, oder im Lesemodus gar nicht
   angefasst. Doppelte Berichte werden erkannt.
-- **Push-Meldungen** über Pushover bei neuen Fehlschlägen, unbekannten Absendern und
-  TLS-Problemen, höchstens einmal am Tag pro Fund
+- **Benachrichtigungen** über Pushover, ntfy, Webhook oder E-Mail bei neuen Fehlschlägen,
+  unbekannten Absendern und TLS-Problemen, höchstens einmal am Tag pro Fund, dazu optional eine
+  **Wochenübersicht**
+- **Kennzahlen** als JSON und im Prometheus-Format für Dashboards
+- **Aufbewahrung:** Berichte, die älter als eine einstellbare Zahl von Tagen sind, werden
+  automatisch gelöscht
 - **Benutzerkonten** mit den Rollen Administration und Lesezugriff, **Zwei-Faktor-Anmeldung**
   mit Authenticator-App und Wiederherstellungscodes, **Passkeys und Sicherheitsschlüssel**,
   **Single Sign-on** über einen OpenID-Connect-Anbieter (z. B. Authelia) und ein
@@ -46,7 +57,8 @@ haben – statt XML und Fehlercodes.
 - **Geheimnisse aus Dateien** (`IMAP_PASSWORD_FILE`, `PUSHOVER_TOKEN_FILE`, …) für Docker-Secrets
 - **Hochladen und Importieren** älterer Berichtsdateien, **Hilfeseiten** zu SPF, DKIM,
   DMARC, Ausrichtung und TLS-Reporting
-- **Deutsch und Englisch**, helles und dunkles Design, auch fürs Handy
+- **Sechs Sprachen** (Deutsch, Englisch, Französisch, Spanisch, Italienisch, Niederländisch),
+  helles und dunkles Design, auch fürs Handy
 - **Klein und einfach zu betreiben:** ein Container, eine SQLite-Datei, läuft ohne
   Root-Rechte mit schreibgeschütztem Dateisystem und eingebautem Healthcheck
 

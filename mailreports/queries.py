@@ -147,13 +147,16 @@ class SourceRow:
 
 
 def sources_for(db: Database, sources: list[Source], days: int, domain: str | None = None,
-                limit: int | None = None) -> list[SourceRow]:
+                limit: int | None = None, ip: str | None = None) -> list[SourceRow]:
     sql = """SELECT r.*, p.org_name, p.domain FROM dmarc_records r JOIN dmarc_reports p ON p.id = r.report_id
              WHERE p.date_end >= ?"""
     args: list = [since_ts(days)]
     if domain:
         sql += " AND p.domain = ?"
         args.append(domain)
+    if ip:
+        sql += " AND r.source_ip = ?"
+        args.append(ip)
     with db.connect() as con:
         rows = con.execute(sql, args).fetchall()
     info = db.ip_info(sorted({r["source_ip"] for r in rows}))
@@ -345,3 +348,111 @@ def problems(db: Database, days: int, limit: int = 8) -> list[Problem]:
             p.reporters.add(r["org_name"])
             p.first = min(p.first, r["date_begin"])
     return list(merged.values())[:limit]
+
+
+# ---------------------------------------------------------------- one sender, search, export
+
+def records_of_ip(db: Database, ip: str, days: int, limit: int = 200) -> list:
+    with db.connect() as con:
+        return con.execute(
+            """SELECT r.*, p.id AS rep_id, p.domain, p.org_name, p.date_begin, p.date_end, p.adkim, p.aspf
+               FROM dmarc_records r JOIN dmarc_reports p ON p.id = r.report_id
+               WHERE r.source_ip = ? AND p.date_end >= ? ORDER BY p.date_begin DESC LIMIT ?""",
+            (ip, since_ts(days), limit)).fetchall()
+
+
+def daily_of_ip(db: Database, ip: str, days: int, tz: ZoneInfo) -> list[tuple[date, int, int]]:
+    buckets = {d: [0, 0] for d in day_range(days, tz)}
+    with db.connect() as con:
+        rows = con.execute(
+            """SELECT p.date_begin, p.date_end, r.count, r.dmarc_pass FROM dmarc_records r
+               JOIN dmarc_reports p ON p.id = r.report_id WHERE r.source_ip = ? AND p.date_end >= ?""",
+            (ip, since_ts(days + 1))).fetchall()
+    for row in rows:
+        d = day_of((row["date_begin"] + row["date_end"]) // 2, tz)
+        if d in buckets:
+            buckets[d][0 if row["dmarc_pass"] else 1] += row["count"]
+    return [(d, ok, bad) for d, (ok, bad) in buckets.items()]
+
+
+def search(db: Database, q: str, limit: int = 50) -> dict:
+    """IP addresses, host names, domains, reporting organisations, report IDs and DKIM selectors."""
+    q = q.strip()
+    if len(q) < 2:
+        return {"ips": [], "reports": [], "tls": []}
+    like = f"%{q.replace('%', '').replace('_', '')}%"
+    with db.connect() as con:
+        ips = con.execute(
+            """SELECT r.source_ip AS ip, SUM(r.count) AS messages, MAX(p.date_end) AS last_seen, i.ptr
+               FROM dmarc_records r JOIN dmarc_reports p ON p.id = r.report_id
+               LEFT JOIN ip_info i ON i.ip = r.source_ip
+               WHERE r.source_ip LIKE ? OR i.ptr LIKE ? OR i.as_org LIKE ? OR r.dkim LIKE ? OR r.envelope_from LIKE ?
+               GROUP BY r.source_ip ORDER BY messages DESC LIMIT ?""",
+            (like, like, like, f'%"selector": "{q}"%', like, limit)).fetchall()
+        reports = con.execute(
+            """SELECT * FROM dmarc_reports WHERE domain LIKE ? OR org_name LIKE ? OR report_id LIKE ?
+               ORDER BY date_begin DESC LIMIT ?""", (like, like, like, limit)).fetchall()
+        tls = con.execute(
+            """SELECT DISTINCT t.* FROM tls_reports t LEFT JOIN tls_policies p ON p.report_id = t.id
+               WHERE t.org_name LIKE ? OR t.report_id LIKE ? OR p.policy_domain LIKE ?
+               ORDER BY t.date_begin DESC LIMIT ?""", (like, like, like, limit)).fetchall()
+    return {"ips": ips, "reports": reports, "tls": tls}
+
+
+def export_records(db: Database, days: int, domain: str = "", org: str = "", failed_only: bool = False) -> list:
+    where = ["p.date_end >= ?"]
+    args: list = [since_ts(days)]
+    if domain:
+        where.append("p.domain = ?")
+        args.append(domain)
+    if org:
+        where.append("p.org_name = ?")
+        args.append(org)
+    if failed_only:
+        where.append("r.dmarc_pass = 0")
+    with db.connect() as con:
+        return con.execute(
+            f"""SELECT p.date_begin, p.date_end, p.org_name, p.report_id, p.domain, p.p, r.source_ip, i.ptr,
+                       i.country, i.asn, r.count, r.disposition, r.dkim_eval, r.spf_eval, r.dmarc_pass,
+                       r.header_from, r.envelope_from, r.dkim, r.spf
+                FROM dmarc_records r JOIN dmarc_reports p ON p.id = r.report_id
+                LEFT JOIN ip_info i ON i.ip = r.source_ip
+                WHERE {' AND '.join(where)} ORDER BY p.date_begin, p.id""", args).fetchall()
+
+
+def selectors_of(db: Database, domain: str, days: int = 90) -> list[str]:
+    """DKIM selectors seen with a passing signature of this domain."""
+    found: set[str] = set()
+    with db.connect() as con:
+        for row in con.execute(
+                """SELECT DISTINCT r.dkim FROM dmarc_records r JOIN dmarc_reports p ON p.id = r.report_id
+                   WHERE p.domain = ? AND p.date_end >= ? AND r.dkim LIKE '%pass%'""", (domain, since_ts(days))):
+            for sig in json.loads(row[0] or "[]"):
+                if sig.get("result") == "pass" and sig.get("domain") == domain and sig.get("selector"):
+                    found.add(sig["selector"])
+    return sorted(found)
+
+
+def metrics(db: Database, sources: list[Source], tz: ZoneInfo, domains: list[str] | None) -> dict:
+    """Key figures for dashboards (7 and 30 days)."""
+    out: dict = {"domains": {}}
+    for days in (7, 30):
+        unknown: dict[str, int] = {}
+        for row in sources_for(db, sources, days):
+            if row.kind == "unknown":
+                for d in row.domains:
+                    unknown[d] = unknown.get(d, 0) + 1
+        for s in domain_summaries(db, days, tz, domains):
+            entry = out["domains"].setdefault(s.domain, {})
+            entry[f"{days}d"] = {
+                "messages": s.messages, "passed": s.passed, "failed": s.failed,
+                "pass_rate": round(s.rate, 2) if s.rate is not None else None,
+                "quarantined": s.quarantined, "rejected": s.rejected, "reports": s.reports,
+                "tls_success": s.tls_success, "tls_failure": s.tls_failure,
+                "unknown_sources": unknown.get(s.domain, 0), "policy": s.policy or None,
+            }
+    totals = counts(db)
+    out["reports"] = {"dmarc": totals["dmarc"], "tls": totals["tls"]}
+    out["last_fetch"] = int(db.get_meta("last_fetch") or 0) or None
+    out["last_fetch_ok"] = not db.get_meta("last_fetch_error")
+    return out

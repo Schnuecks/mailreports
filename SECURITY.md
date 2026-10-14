@@ -27,6 +27,10 @@ files are therefore treated as untrusted input:
 - All text from reports is escaped in the pages; the page uses a strict Content Security
   Policy without inline code and loads nothing from third parties.
 - Emails are only read and flagged or moved, never deleted.
+- The CSV export prefixes cells starting with `=`, `+`, `-` or `@` so spreadsheet programs do
+  not run report data as formulas.
+- The DNS check fetches the MTA-STS policy only from public addresses, never from internal
+  networks.
 
 Access:
 
@@ -41,6 +45,8 @@ Access:
   `TRUSTED_PROXIES` (the app refuses to start without it);
   set it to the proxy's own address, not the whole Docker network, and do not publish the
   port, otherwise other containers could send the header themselves.
+- `/metrics` and `/api/metrics` can be opened with `METRICS_TOKEN` without signing in; the
+  token grants nothing else.
 - Form posts are only accepted from the same site (`Sec-Fetch-Site`, otherwise `Origin`).
 - Credentials (IMAP, Pushover) can be read from files (`*_FILE`). They are never logged or
   shown on the pages.

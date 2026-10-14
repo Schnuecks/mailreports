@@ -3,20 +3,24 @@
 """Web app: pages, access check, background fetch."""
 from __future__ import annotations
 
+import csv
+import io
 import ipaddress
 import logging
 import math
 import os
 import re
+import secrets
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, accounts, i18n, queries, routes_auth, web
+from . import __version__, accounts, advice, dnscheck, i18n, queries, routes_auth, web
 from .explain import explain_record
 from .ingest import Outcome, ingest_payload
 from .parsing import Payload
@@ -43,6 +47,20 @@ class _MaskSecrets(logging.Filter):
 logging.getLogger("uvicorn.access").addFilter(_MaskSecrets())
 
 MAX_UPLOAD = 20 * 1024 * 1024
+
+
+def _safe_name(name: str) -> str:
+    return re.sub(r"[^\w.!@-]", "_", name)[:150]
+
+
+def _iso(ts) -> str:
+    return datetime.fromtimestamp(int(ts or 0), UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _csv_cell(value):
+    """Report data is untrusted: keep spreadsheet programs from running it as a formula."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else value
 # Reachable without a session (built-in accounts)
 PUBLIC_PATHS = ("/static/", "/login", "/setup", "/oidc/callback", "/lang/")
 # Only for admins
@@ -70,7 +88,7 @@ def create_app(service: Service | None = None) -> FastAPI:
     @app.middleware("http")
     async def guard(request: Request, call_next):
         path = request.url.path
-        if path == "/healthz":
+        if path == "/healthz" or (path in ("/metrics", "/api/metrics") and _metrics_allowed(request)):
             return await call_next(request)
         if settings.trusted_proxies:
             try:
@@ -149,6 +167,42 @@ def create_app(service: Service | None = None) -> FastAPI:
 
     # ------------------------------------------------------------ pages
 
+    def _metrics_allowed(request: Request) -> bool:
+        if not settings.metrics_token:
+            return False
+        auth = request.headers.get("authorization", "")
+        given = auth[7:] if auth.lower().startswith("bearer ") else request.query_params.get("token", "")
+        return bool(given) and secrets.compare_digest(given, settings.metrics_token)
+
+    @app.get("/api/metrics")
+    def metrics_json():
+        return queries.metrics(svc.db, svc.sources, svc.tz, settings.domains or None)
+
+    @app.get("/metrics")
+    def metrics_prometheus():
+        data = queries.metrics(svc.db, svc.sources, svc.tz, settings.domains or None)
+        lines = []
+        names = {"messages": "Emails reported", "failed": "Emails that failed DMARC",
+                 "pass_rate": "Share of emails that passed DMARC in percent",
+                 "tls_failure": "Failed TLS sessions", "tls_success": "Successful TLS sessions",
+                 "unknown_sources": "Sending IPs not in sources.toml"}
+        for key, help_text in names.items():
+            lines += [f"# HELP mailreports_{key} {help_text}", f"# TYPE mailreports_{key} gauge"]
+            for domain, windows in data["domains"].items():
+                for window, values in windows.items():
+                    if values.get(key) is not None:
+                        lines.append(f'mailreports_{key}{{domain="{domain}",window="{window}"}} {values[key]}')
+        lines += ["# HELP mailreports_reports Stored reports", "# TYPE mailreports_reports gauge",
+                  f'mailreports_reports{{kind="dmarc"}} {data["reports"]["dmarc"]}',
+                  f'mailreports_reports{{kind="tls"}} {data["reports"]["tls"]}',
+                  "# HELP mailreports_last_fetch_timestamp_seconds Time of the last fetch",
+                  "# TYPE mailreports_last_fetch_timestamp_seconds gauge",
+                  f"mailreports_last_fetch_timestamp_seconds {data['last_fetch'] or 0}",
+                  "# HELP mailreports_last_fetch_ok 1 if the last fetch succeeded",
+                  "# TYPE mailreports_last_fetch_ok gauge",
+                  f"mailreports_last_fetch_ok {int(data['last_fetch_ok'])}"]
+        return PlainTextResponse("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
+
     @app.get("/healthz")
     def healthz():
         try:
@@ -183,8 +237,21 @@ def create_app(service: Service | None = None) -> FastAPI:
         sources = queries.sources_for(svc.db, svc.sources, days, domain, limit=25)
         tls = [t for t in queries.tls_overview(svc.db, days) if t["policy_domain"] == domain]
         reports, total = queries.list_reports(svc.db, days, domain=domain)
+        current = {"p": summary.policy, "sp": summary.sp, "pct": summary.pct, "adkim": summary.adkim,
+                   "aspf": summary.aspf}
+        recommendation = advice.policy_advice(svc.db, svc.sources, domain, current, svc.tz) if summary.policy else None
         return render(request, "domain.html", s=summary, sources=sources, tls=tls,
-                      reports=reports[:10], total=total)
+                      reports=reports[:10], total=total, advice=recommendation)
+
+    @app.get("/domain/{domain}/dns")
+    def dns_page(request: Request, domain: str):
+        domain = domain.lower()
+        if domain not in queries.all_domains(svc.db):
+            raise HTTPException(404)
+        mailbox = settings.imap_user if "@" in settings.imap_user else ""
+        sections = dnscheck.check_domain(domain, queries.selectors_of(svc.db, domain), mailbox,
+                                         refresh=request.query_params.get("refresh") == "1")
+        return render(request, "dns.html", domain=domain, sections=sections)
 
     @app.get("/reports")
     def reports_page(request: Request):
@@ -206,7 +273,71 @@ def create_app(service: Service | None = None) -> FastAPI:
         items = explained(records, {rep["id"]: rep})
         total = sum(r["count"] for r in records)
         passed = sum(r["count"] for r in records if r["dmarc_pass"])
-        return render(request, "report.html", rep=rep, items=items, total=total, passed=passed)
+        return render(request, "report.html", rep=rep, items=items, total=total, passed=passed,
+                      has_raw=svc.db.has_raw("dmarc", report_id))
+
+    @app.get("/sources/{ip}")
+    def source_page(request: Request, ip: str):
+        days = days_of(request)
+        rows = queries.sources_for(svc.db, svc.sources, days, ip=ip)
+        records = queries.records_of_ip(svc.db, ip, days)
+        if not rows and not records:
+            with svc.db.connect() as con:
+                known = con.execute("SELECT 1 FROM dmarc_records WHERE source_ip = ? LIMIT 1", (ip,)).fetchone()
+            if not known:
+                raise HTTPException(404)
+        info = svc.db.ip_info([ip]).get(ip)
+        items = []
+        for r in records:
+            verdict = classify(svc.sources, r, info)
+            report = {"id": r["rep_id"], "domain": r["domain"], "adkim": r["adkim"], "aspf": r["aspf"]}
+            items.append({"r": r, "verdict": verdict, "ex": explain_record(r, verdict, info, report)})
+        return render(request, "source.html", ip=ip, row=rows[0] if rows else None, info=info, items=items,
+                      daily=queries.daily_of_ip(svc.db, ip, days, svc.tz))
+
+    @app.get("/search")
+    def search_page(request: Request):
+        q = request.query_params.get("q", "")[:100]
+        return render(request, "search.html", q=q, results=queries.search(svc.db, q))
+
+    @app.get("/reports/{report_id}/raw")
+    def report_raw(report_id: int):
+        rep, _records = queries.report_detail(svc.db, report_id)
+        data = svc.db.raw_report("dmarc", report_id) if rep else None
+        if data is None:
+            raise HTTPException(404)
+        name = f"{rep['org_name']}!{rep['domain']}!{rep['date_begin']}!{rep['date_end']}.xml"
+        return Response(data, media_type="application/xml",
+                        headers={"Content-Disposition": f'attachment; filename="{_safe_name(name)}"'})
+
+    @app.get("/tls/{report_id}/raw")
+    def tls_raw(report_id: int):
+        rep, _policies = queries.tls_detail(svc.db, report_id)
+        data = svc.db.raw_report("tls", report_id) if rep else None
+        if data is None:
+            raise HTTPException(404)
+        name = f"{rep['org_name']}!{rep['date_begin']}!{rep['date_end']}.json"
+        return Response(data, media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="{_safe_name(name)}"'})
+
+    @app.get("/export/dmarc.csv")
+    def export_csv(request: Request):
+        days = days_of(request)
+        rows = queries.export_records(svc.db, days, request.query_params.get("domain", ""),
+                                      request.query_params.get("org", ""), request.query_params.get("failed") == "1")
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["begin_utc", "end_utc", "reporter", "report_id", "domain", "policy", "source_ip", "ptr",
+                         "country", "asn", "count", "disposition", "dkim", "spf", "dmarc_pass", "header_from",
+                         "envelope_from", "dkim_results", "spf_results"])
+        for r in rows:
+            values = [_iso(r["date_begin"]), _iso(r["date_end"]), r["org_name"], r["report_id"], r["domain"],
+                      r["p"], r["source_ip"], r["ptr"] or "", r["country"] or "", r["asn"] or "", r["count"],
+                      r["disposition"], r["dkim_eval"], r["spf_eval"], int(r["dmarc_pass"]), r["header_from"],
+                      r["envelope_from"], r["dkim"], r["spf"]]
+            writer.writerow([_csv_cell(v) for v in values])
+        return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="dmarc-records-{days}d.csv"'})
 
     @app.get("/sources")
     def sources_page(request: Request):
@@ -232,7 +363,7 @@ def create_app(service: Service | None = None) -> FastAPI:
         rep, policies = queries.tls_detail(svc.db, report_id)
         if not rep:
             raise HTTPException(404)
-        return render(request, "tls_report.html", rep=rep, policies=policies)
+        return render(request, "tls_report.html", rep=rep, policies=policies, has_raw=svc.db.has_raw("tls", report_id))
 
     @app.get("/help")
     def help_page(request: Request):

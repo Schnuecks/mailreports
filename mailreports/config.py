@@ -74,6 +74,7 @@ class Settings:
     imap_error_folder: str = ""       # folder for mails without a usable report; empty = flag
     imap_readonly: bool = False       # never change the mailbox, remember processed mails in the database
     fetch_interval: int = 900         # seconds between two fetches
+    retention_days: int = 0           # delete reports older than this; 0 keeps them
     # Enrichment
     dns_lookups: bool = True
     geoip_city_db: str = ""
@@ -83,6 +84,19 @@ class Settings:
     # Notifications
     pushover_token: str = ""
     pushover_user: str = ""
+    ntfy_url: str = ""                # e.g. https://ntfy.sh/my-topic
+    ntfy_token: str = ""
+    webhook_url: str = ""             # JSON POST
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_security: str = "starttls"   # starttls, ssl or none
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    notify_email: list[str] = field(default_factory=list)
+    digest: str = "off"               # weekly or off
+    digest_weekday: int = 0           # 0 = Monday
+    metrics_token: str = ""
     notify_cooldown_hours: int = 24
     base_url: str = ""
     # Access
@@ -132,6 +146,24 @@ class Settings:
     def pushover_enabled(self) -> bool:
         return bool(self.pushover_token and self.pushover_user)
 
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_from and self.notify_email)
+
+    @property
+    def notify_enabled(self) -> bool:
+        return self.pushover_enabled or self.email_enabled or bool(self.ntfy_url or self.webhook_url)
+
+
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+def _weekday(value: str) -> int:
+    value = value.strip().lower()[:3]
+    if value not in WEEKDAYS:
+        raise SystemExit("DIGEST_WEEKDAY must be one of mon, tue, wed, thu, fri, sat, sun")
+    return WEEKDAYS.index(value)
+
 
 def load() -> Settings:
     geoip_dir = Path(env("GEOIP_DIR", "/geoip"))
@@ -150,6 +182,7 @@ def load() -> Settings:
         imap_error_folder=env("IMAP_ERROR_FOLDER"),
         imap_readonly=env_bool("IMAP_READONLY", False),
         fetch_interval=max(60, env_int("FETCH_INTERVAL", 900)),
+        retention_days=max(0, env_int("RETENTION_DAYS", 0)),
         dns_lookups=env_bool("DNS_LOOKUPS", True),
         geoip_city_db=env("GEOIP_CITY_DB") or _first_existing(geoip_dir / "GeoLite2-City.mmdb"),
         geoip_country_db=env("GEOIP_COUNTRY_DB") or _first_existing(geoip_dir / "GeoLite2-Country.mmdb"),
@@ -157,6 +190,19 @@ def load() -> Settings:
         sources_file=env("SOURCES_FILE") or _first_existing(Path("/config/sources.toml")),
         pushover_token=env("PUSHOVER_TOKEN"),
         pushover_user=env("PUSHOVER_USER"),
+        ntfy_url=env("NTFY_URL").rstrip("/"),
+        ntfy_token=env("NTFY_TOKEN"),
+        webhook_url=env("WEBHOOK_URL"),
+        smtp_host=env("SMTP_HOST"),
+        smtp_port=env_int("SMTP_PORT", 465 if env("SMTP_SECURITY").lower() == "ssl" else 587),
+        smtp_security=(env("SMTP_SECURITY", "starttls") or "starttls").lower(),
+        smtp_user=env("SMTP_USER"),
+        smtp_password=env("SMTP_PASSWORD"),
+        smtp_from=env("SMTP_FROM"),
+        notify_email=env_list("NOTIFY_EMAIL"),
+        digest=(env("DIGEST", "off") or "off").lower(),
+        digest_weekday=_weekday(env("DIGEST_WEEKDAY", "mon")),
+        metrics_token=env("METRICS_TOKEN"),
         notify_cooldown_hours=max(1, env_int("NOTIFY_COOLDOWN_HOURS", 24)),
         base_url=env("BASE_URL").rstrip("/"),
         admin_username=env("ADMIN_USERNAME", "admin") or "admin",

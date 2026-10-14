@@ -15,7 +15,8 @@ import contextvars
 import json
 from pathlib import Path
 
-LANGUAGES = {"de": "Deutsch", "en": "English"}
+LANGUAGES = {"de": "Deutsch", "en": "English", "fr": "Français", "es": "Español", "it": "Italiano",
+             "nl": "Nederlands"}
 FALLBACK = "de"   # language of the texts in the code
 DEFAULT = "en"    # if the browser language is not supported
 

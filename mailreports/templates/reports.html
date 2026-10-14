@@ -25,7 +25,8 @@
   <noscript><button class="btn">{{ _("Filtern") }}</button></noscript>
 </form>
 <section class="card">
-  <p class="muted">{{ ngettext("{n} Bericht", "{n} Berichte", total) }}</p>
+  <div class="card-head"><p class="muted">{{ ngettext("{n} Bericht", "{n} Berichte", total) }}</p>
+    <a href="/export/dmarc.csv?days={{ days }}&{{ q }}">{{ _("Einträge als CSV exportieren") }}</a></div>
   {% set reports = rows %}
   {% include "_report_table.html" with context %}
   {{ m.pager(page, pages, "days=" ~ days ~ "&" ~ q) }}

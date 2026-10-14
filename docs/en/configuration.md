@@ -18,6 +18,7 @@ All settings are environment variables. **Every variable can also be read from a
 | `IMAP_ERROR_FOLDER` | – | Folder for emails without a usable report. Empty: keyword `$MailreportsError`. |
 | `IMAP_READONLY` | `false` | `true`: open the mailbox read-only and change nothing (no flags, no moving); processed emails are remembered in the database. For running next to another program that reads the same mailbox. |
 | `FETCH_INTERVAL` | 900 | Seconds between two fetches (minimum 60) |
+| `RETENTION_DAYS` | 0 | Delete reports older than this many days (checked daily); `0` keeps them forever. 400 keeps a little more than a year. |
 
 Emails are never deleted. Emails with one of the two keywords are skipped on later fetches.
 A report that is already stored (same organisation and report ID) counts as a duplicate.
@@ -28,19 +29,30 @@ A report that is already stored (same organisation and report ID) counts as a du
 |---|---|---|
 | `APP_TITLE` | `mailreports` | Name in the header and the browser tab |
 | `LOGO_URL` | built-in icon | Logo (34 px in the header) and favicon, e.g. an HTTPS URL |
-| `DEFAULT_LANGUAGE` | browser language | `de` or `en` |
+| `DEFAULT_LANGUAGE` | browser language | `de`, `en`, `fr`, `es`, `it` or `nl` |
 | `DOMAINS` | all | Comma-separated: which domains the overview shows, in this order |
 | `TZ` | `UTC` | Time zone for dates, e.g. `Europe/Berlin` |
 | `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link to the source code in the footer; empty hides it |
 
 ## Notifications
 
+Findings are sent to every configured channel.
+
 | Variable | Default | Meaning |
 |---|---|---|
-| `PUSHOVER_TOKEN` | – | Pushover application token (or `_FILE`) |
-| `PUSHOVER_USER` | – | Pushover user or group key (or `_FILE`) |
+| `PUSHOVER_TOKEN`, `PUSHOVER_USER` | – | Pushover application token and user or group key (or `_FILE`) |
+| `NTFY_URL` | – | ntfy topic address, e.g. `https://ntfy.sh/my-topic` |
+| `NTFY_TOKEN` | – | Access token for a protected ntfy topic (or `_FILE`) |
+| `WEBHOOK_URL` | – | Receives a JSON POST with `title`, `message`, `url` and `findings` |
+| `SMTP_HOST`, `SMTP_PORT` | –, 587 (465 for ssl) | Mail server for notifications by email |
+| `SMTP_SECURITY` | `starttls` | `starttls`, `ssl` or `none` |
+| `SMTP_USER`, `SMTP_PASSWORD` | – | Login at the mail server (or `_FILE`) |
+| `SMTP_FROM` | – | Sender address |
+| `NOTIFY_EMAIL` | – | Comma-separated recipients |
 | `NOTIFY_COOLDOWN_HOURS` | 24 | The same finding is reported at most once in this time |
-| `BASE_URL` | – | Public address, added as a link to the message |
+| `DIGEST` | `off` | `weekly`: a summary of the last 7 days to all channels |
+| `DIGEST_WEEKDAY` | `mon` | Day of the summary (`mon` … `sun`), sent after 8:00 local time |
+| `BASE_URL` | – | Public address, added as a link to the messages |
 
 A message is sent after a fetch when new reports contain emails that failed DMARC (except
 recognised forwarding), senders that passed but are not in `sources.toml`, or TLS failures.
@@ -96,6 +108,16 @@ Register `PUBLIC_URL/oidc/callback` as redirect URI at the provider, with the sc
 | `TRUSTED_PROXIES` | – | Comma-separated addresses or networks; requests from anywhere else get 403. Use the proxy's single address, not the whole network (see [Installation](installation.md#3-behind-a-reverse-proxy-with-login)). |
 
 `/healthz` is always reachable for the container health check.
+
+## Key figures
+
+`/api/metrics` returns the figures per domain for 7 and 30 days as JSON (messages, passed,
+failed, pass rate, quarantined, rejected, TLS sessions, unknown sources, policy) – suitable for
+dashboard widgets. `/metrics` returns the same in the Prometheus text format.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `METRICS_TOKEN` | – | With a token, both addresses can be read without signing in: `Authorization: Bearer <token>` or `?token=<token>`. Without it, only signed-in users can read them. |
 
 ## Lookups and storage
 

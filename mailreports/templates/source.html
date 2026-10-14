@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ ip }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1><code class="plain">{{ ip }}</code></h1>
+  {{ m.periods_switch(days, periods) }}
+</div>
+
+<div class="grid stats">
+  <div class="card stat"><span class="lbl">{{ _("Einordnung") }}</span><strong class="small">{{ m.kind_badge(row.kind if row else "unknown", row.source if row else None) }}</strong>
+    {% if row and row.source and row.source.note %}<small class="muted">{{ row.source.note }}</small>{% endif %}</div>
+  <div class="card stat"><span class="lbl">{{ _("E-Mails") }}</span><strong>{{ num(row.messages if row else 0) }}</strong></div>
+  <div class="card stat"><span class="lbl">{{ _("DMARC bestanden") }}</span>{{ m.rate(row.rate if row else none) }}</div>
+  <div class="card stat"><span class="lbl">{{ _("Herkunft") }}</span><strong class="small">
+    {% if info and info.ptr %}{{ info.ptr }}{% if info.ptr_confirmed %} ✓{% endif %}<br>{% endif %}
+    {{ ex.origin(info) or "–" }}</strong></div>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>{{ _("Verlauf") }}</h2>{{ m.legend() }}</div>
+  {{ bar_chart(daily, fmt, 120, _("E-Mails pro Tag von {ip}", ip=ip)) }}
+  {% if daily %}<div class="axis"><span>{{ fmt.day(daily[0][0]) }}</span><span>{{ fmt.day(daily[(daily|length) // 2][0]) }}</span><span>{{ fmt.day(daily[-1][0]) }}</span></div>{% endif %}
+</section>
+
+{% if row %}
+<section class="card">
+  <h2>{{ _("Merkmale") }}</h2>
+  <dl class="kv">
+    <dt>{{ _("Absender-Domains") }}</dt><dd>{{ row.header_from|sort|join(", ") or "–" }}</dd>
+    <dt>{{ _("DKIM-Selektoren") }}</dt><dd>{{ row.selectors|sort|join(", ") or "–" }}</dd>
+    <dt>{{ _("Berichtet von") }}</dt><dd>{{ row.reporters|sort|join(", ") }}</dd>
+    <dt>{{ _("Ergebnis beim Empfänger") }}</dt><dd>{% for d, n in row.dispositions.most_common() %}{{ ex.disposition_label(d) }}: {{ num(n) }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+  </dl>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>{{ _("Einträge") }}</h2>
+  {% for item in items %}{% set r = item.r %}
+  <article class="explain level-{{ item.ex.level }}">
+    {{ m.status_icon(item.ex.level) }}
+    <div>
+      <h3>{{ item.ex.title }} <small>· {{ r.domain }} · {{ fmt.range(r.date_begin, r.date_end) }} · {{ r.org_name }}</small></h3>
+      <p>{{ item.ex.text }}</p>
+      <a class="more" href="/reports/{{ r.rep_id }}">{{ _("Zum Bericht") }} →</a>
+    </div>
+  </article>
+  {% else %}<p class="muted">{{ _("Keine Daten im Zeitraum.") }}</p>{% endfor %}
+</section>
+{% endblock %}

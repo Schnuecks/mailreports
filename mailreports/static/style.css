@@ -277,3 +277,19 @@ ul.plain-list li { padding: .4rem 0; border-bottom: 1px solid var(--line); }
 .btn.danger:hover { background: var(--bad); color: #fff; }
 a.user { color: var(--text); text-decoration: none; font-weight: 600; }
 a.user[aria-current] { color: var(--accent); }
+.top-search input { width: 11rem; font: inherit; font-size: .85rem; padding: .3rem .6rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+.filters label.grow { flex: 1 1 20rem; }
+.filters input[type=search] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .45rem .7rem; }
+code.plain { background: none; border: 0; padding: 0; font-size: 1em; }
+.ip a code { color: var(--text); }
+.ip a:hover code { border-color: var(--btn-hover); }
+@media (max-width: 760px) { .top-search { display: none; } }
+.actions-row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+pre.record { font-size: .8rem; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 .6rem; }
+ul.findings { margin: 0; padding-left: 1.2rem; }
+ul.findings li { margin: .25rem 0; }
+ul.findings li::marker { font-weight: 700; }
+.f-ok::marker { content: "✓  "; color: var(--ok); }
+.f-info::marker { content: "i  "; color: var(--muted); }
+.f-warn::marker { content: "!  "; color: var(--warn); }
+.f-bad::marker { content: "✕  "; color: var(--bad); }

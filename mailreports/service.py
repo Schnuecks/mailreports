@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
+from datetime import datetime
 
-from . import accounts, config, enrich, fetch, notify, secretbox
+from . import accounts, config, enrich, fetch, notify, secretbox, web
 from .db import Database
 from .ingest import Outcome
 from .sources import load_sources
@@ -94,19 +96,40 @@ class Service:
 
     # ------------------------------------------------------------ loop
 
+    def periodic(self) -> None:
+        """Daily jobs: deleting old data; the weekly summary."""
+        now = int(time.time())
+        s = self.settings
+        if s.digest == "weekly" and s.notify_enabled:
+            local = datetime.fromtimestamp(now, web.zone(s.timezone))
+            week = local.strftime("%G-W%V")
+            if local.weekday() == s.digest_weekday and local.hour >= 8 and self.db.get_meta("last_digest") != week:
+                if notify.send_digest(self.db, s, self.sources, web.zone(s.timezone)):
+                    self.db.set_meta("last_digest", week)
+        if now - int(self.db.get_meta("last_housekeeping", "0") or 0) >= 86400:
+            removed = self.db.housekeeping(self.settings.retention_days)
+            self.db.set_meta("last_housekeeping", str(now))
+            if removed["dmarc"] or removed["tls"]:
+                log.info("housekeeping: %d DMARC and %d TLS reports older than %d days deleted",
+                         removed["dmarc"], removed["tls"], self.settings.retention_days)
+
     def _loop(self) -> None:
         while not self._stop.is_set():
             try:
                 self.run_once()
             except Exception:
                 log.exception("fetch run failed")
+            try:
+                self.periodic()
+            except Exception:
+                log.exception("periodic jobs failed")
             self._wake.wait(self.settings.fetch_interval)
             self._wake.clear()
 
     def start(self) -> None:
-        if self._thread or not self.settings.background_tasks or not self.settings.imap_enabled:
+        if self._thread or not self.settings.background_tasks:
             return
-        self._thread = threading.Thread(target=self._loop, name="fetch", daemon=True)
+        self._thread = threading.Thread(target=self._loop, name="background", daemon=True)
         self._thread.start()
 
     def trigger(self) -> None:

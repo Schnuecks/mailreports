@@ -11,12 +11,26 @@ sendender IP, in Klartext.
 Jede Karte führt zur **Domain-Seite** mit erklärter Richtlinie, Verlauf, den häufigsten
 sendenden IPs, TLS-Ergebnissen und den neuesten Berichten.
 
+## DNS-Prüfung und Empfehlung zur Richtlinie
+
+Die Domain-Seite hat die Schaltfläche **DNS prüfen**. Sie fragt die aktuell veröffentlichten
+Einträge ab und weist auf Probleme hin: DMARC-Eintrag (Richtlinie, Berichtsadresse und deren
+Freigabe bei einer fremden Domain), SPF (abschließendes `all`, Grenze von 10 DNS-Abfragen), jeder
+in den Berichten gesehene DKIM-Selektor mit Schlüssellänge, MX mit DANE/TLSA, MTA-STS (Modus und
+ob jeder MX in der Richtlinie steht) und TLS-RPT. Ergebnisse werden 10 Minuten zwischengespeichert.
+
+Die Karte **Empfehlung** wertet die letzten 30 Tage aus: Bestehen alle bekannten Quellen DMARC und
+besteht keine unbekannte Quelle, schlägt sie die nächststrengere Richtlinie vor (`p=none` →
+`p=quarantine` → `p=reject`), samt Eintrag; sonst nennt sie, was vorher zu klären ist.
+
 ## DMARC-Berichte
 
 Die Liste lässt sich nach Domain, berichtender Organisation und „nur mit Fehlschlägen“
 filtern. Ein Bericht zeigt jeden Eintrag zweimal: zuerst als Satz („Diese 12 Mails kamen
 von …“), dann im Detail mit sendender IP, Reverse-DNS, Land und Netz, Header-From und
-Envelope-From, jeder DKIM-Signatur mit Selektor und der SPF-Prüfung.
+Envelope-From, jeder DKIM-Signatur mit Selektor und der SPF-Prüfung. Die Originaldatei lässt
+sich auf der Berichtsseite herunterladen, und die Liste exportiert alle Einträge der gefilterten
+Berichte als CSV.
 
 Gut zu wissen beim Lesen:
 
@@ -39,6 +53,10 @@ Alle sendenden IPs des Zeitraums mit ihrer Einordnung:
 | Unbekannt | alles andere |
 
 Bekannte Quellen erscheinen mit ihrem Namen aus `sources.toml`; mit der Maus darüber zeigt sich die Art.
+
+Jede IP-Adresse führt zu einer eigenen Seite mit Verlauf, Einordnung, Reverse-DNS, Land und Netz
+und allen ihren Einträgen. Das Suchfeld oben findet IP-Adressen, Hostnamen, Domains, berichtende
+Organisationen, Bericht-IDs und DKIM-Selektoren.
 
 Ein **unbekannter Absender, der DMARC besteht**, ist meist ein Dienst, den du noch nicht
 eingetragen hast. Ein **unbekannter Absender, der durchfällt**, ist meist jemand, der deine

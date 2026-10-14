@@ -4,7 +4,10 @@
 {% block content %}
 <div class="page-head">
   <h1>{{ s.domain }}</h1>
-  {{ m.periods_switch(days, periods) }}
+  <div class="actions-row">
+    <a class="btn ghost" href="/domain/{{ s.domain }}/dns">{{ _("DNS prüfen") }}</a>
+    {{ m.periods_switch(days, periods) }}
+  </div>
 </div>
 
 <div class="grid stats">
@@ -29,6 +32,22 @@
     {% else %}{{ _("Nur Überwachung: E-Mails, die DMARC nicht bestehen, werden gemeldet, aber nicht blockiert.") }}{% endif %}
     {% if s.adkim == 's' and s.aspf == 's' %}{{ _("Strenge Ausrichtung: Die Domains müssen exakt übereinstimmen; Subdomains genügen nicht.") }}{% endif %}
   </p>
+</section>
+{% endif %}
+
+{% if advice %}
+<section class="card advice">
+  <h2>{{ _("Empfehlung") }}</h2>
+  <article class="explain level-{{ advice.level }}">
+    {{ m.status_icon(advice.level if advice.level != 'info' else 'ok') }}
+    <div>
+      <h3>{{ _(advice.title) }}</h3>
+      <p>{{ _(advice.text, **advice.args) }}</p>
+      {% if advice.points %}<ul class="findings">{% for text, args in advice.points %}<li class="f-warn">{{ _(text, **args) }}</li>{% endfor %}</ul>{% endif %}
+      {% if advice.record %}<p class="muted small">{{ _("Vorgeschlagener Eintrag (rua= und weitere Angaben aus dem bestehenden Eintrag übernehmen):") }}</p><pre class="record">{{ advice.record }}</pre>{% endif %}
+    </div>
+  </article>
+  <p class="muted small">{{ _("Grundlage: Berichte der letzten 30 Tage und die bekannten Quellen aus sources.toml.") }}</p>
 </section>
 {% endif %}
 
