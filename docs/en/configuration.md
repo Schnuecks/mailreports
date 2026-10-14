@@ -16,6 +16,7 @@ All settings are environment variables. **Every variable can also be read from a
 | `IMAP_FOLDER` | `INBOX` | Folder with the report mails |
 | `IMAP_MOVE_TO` | – | Folder for processed mails (created if missing). Empty: mails stay and are flagged as seen with the keyword `$MailreportsDone`. |
 | `IMAP_ERROR_FOLDER` | – | Folder for mails without a usable report. Empty: keyword `$MailreportsError`. |
+| `IMAP_READONLY` | `false` | `true`: open the mailbox read-only and change nothing (no flags, no moving); processed mails are remembered in the database. For running next to another program that reads the same mailbox. |
 | `FETCH_INTERVAL` | 900 | Seconds between two fetches (minimum 60) |
 
 Mails are never deleted. Mails with one of the two keywords are skipped on later fetches.

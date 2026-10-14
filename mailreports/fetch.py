@@ -6,6 +6,10 @@ Mails are never deleted. Processed mails are moved to IMAP_MOVE_TO, or – if th
 empty – flagged as seen and with the keyword $MailreportsDone. Mails without a usable
 report go to IMAP_ERROR_FOLDER or get the keyword $MailreportsError. Both keywords are
 skipped on the next fetch, so a mail is looked at only once.
+
+With IMAP_READONLY the mailbox is opened read-only and nothing is changed at all; the
+UIDs of processed mails are remembered in the database instead. Useful when another
+program reads the same mailbox.
 """
 from __future__ import annotations
 
@@ -92,16 +96,26 @@ def fetch(db: Database, settings: Settings) -> FetchResult:
         return result
     try:
         caps = {c.decode().upper() if isinstance(c, bytes) else str(c).upper() for c in conn.capabilities}
-        for folder in {settings.imap_move_to, settings.imap_error_folder} - {""}:
-            _ensure_folder(conn, folder)
-        typ, data = conn.select(_quote(settings.imap_folder))
+        readonly = settings.imap_readonly
+        if not readonly:
+            for folder in {settings.imap_move_to, settings.imap_error_folder} - {""}:
+                _ensure_folder(conn, folder)
+        typ, data = conn.select(_quote(settings.imap_folder), readonly=readonly)
         if typ != "OK":
             raise imaplib.IMAP4.error(f"cannot open folder {settings.imap_folder}: {data}")
-        typ, data = conn.uid("SEARCH", None, f"UNKEYWORD {KW_DONE} UNKEYWORD {KW_ERROR}")
+        if readonly:
+            validity = conn.response("UIDVALIDITY")[1]
+            uidvalidity = (validity[0] or b"0").decode() if validity else "0"
+            typ, data = conn.uid("SEARCH", None, "ALL")
+        else:
+            typ, data = conn.uid("SEARCH", None, f"UNKEYWORD {KW_DONE} UNKEYWORD {KW_ERROR}")
         if typ != "OK":
             raise imaplib.IMAP4.error(f"SEARCH failed: {data}")
-        uids = data[0].split()[:BATCH] if data and data[0] else []
-        for uid in uids:
+        uids = data[0].split() if data and data[0] else []
+        if readonly:
+            seen = db.seen_uids(settings.imap_folder, uidvalidity)
+            uids = [u for u in uids if int(u) not in seen]
+        for uid in uids[:BATCH]:
             typ, parts = conn.uid("FETCH", uid, "(BODY.PEEK[])")
             raw = next((p[1] for p in parts or [] if isinstance(p, tuple) and len(p) > 1), None)
             if typ != "OK" or raw is None:
@@ -110,8 +124,11 @@ def fetch(db: Database, settings: Settings) -> FetchResult:
             out = ingest_mail(db, raw)
             result.mails += 1
             result.outcome.merge(out)
-            _finish(conn, uid, out.found_any, settings, caps)
-        if settings.imap_move_to or settings.imap_error_folder:
+            if readonly:
+                db.mark_uid_seen(settings.imap_folder, uidvalidity, int(uid))
+            else:
+                _finish(conn, uid, out.found_any, settings, caps)
+        if not readonly and (settings.imap_move_to or settings.imap_error_folder):
             if "UIDPLUS" not in caps and "MOVE" not in caps:
                 conn.expunge()
     except (OSError, imaplib.IMAP4.error, ssl.SSLError) as exc:

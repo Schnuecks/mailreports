@@ -114,6 +114,13 @@ CREATE TABLE IF NOT EXISTS ip_info (
     updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS imap_seen (
+    folder TEXT NOT NULL,
+    uidvalidity TEXT NOT NULL,
+    uid INTEGER NOT NULL,
+    PRIMARY KEY (folder, uidvalidity, uid)
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
     key TEXT PRIMARY KEY,
     last_sent INTEGER NOT NULL
@@ -252,6 +259,17 @@ class Database:
                    ) LEFT JOIN ip_info USING (ip)
                    WHERE ip_info.ip IS NULL OR ip_info.updated_at < ?""", (cutoff,)).fetchall()
         return [r["ip"] for r in rows if r["ip"]]
+
+    # ------------------------------------------------------------ read-only IMAP
+
+    def seen_uids(self, folder: str, uidvalidity: str) -> set[int]:
+        with self.connect() as con:
+            return {r[0] for r in con.execute(
+                "SELECT uid FROM imap_seen WHERE folder = ? AND uidvalidity = ?", (folder, uidvalidity))}
+
+    def mark_uid_seen(self, folder: str, uidvalidity: str, uid: int) -> None:
+        with self.connect() as con:
+            con.execute("INSERT OR IGNORE INTO imap_seen VALUES (?, ?, ?)", (folder, uidvalidity, uid))
 
     # ------------------------------------------------------------ notifications
 

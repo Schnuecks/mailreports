@@ -72,6 +72,7 @@ class Settings:
     imap_folder: str = "INBOX"
     imap_move_to: str = ""            # folder for processed mails; empty = only flag them
     imap_error_folder: str = ""       # folder for mails without a usable report; empty = flag
+    imap_readonly: bool = False       # never change the mailbox, remember processed mails in the database
     fetch_interval: int = 900         # seconds between two fetches
     # Enrichment
     dns_lookups: bool = True
@@ -124,6 +125,7 @@ def load() -> Settings:
         imap_folder=env("IMAP_FOLDER", "INBOX"),
         imap_move_to=env("IMAP_MOVE_TO"),
         imap_error_folder=env("IMAP_ERROR_FOLDER"),
+        imap_readonly=env_bool("IMAP_READONLY", False),
         fetch_interval=max(60, env_int("FETCH_INTERVAL", 900)),
         dns_lookups=env_bool("DNS_LOOKUPS", True),
         geoip_city_db=env("GEOIP_CITY_DB") or _first_existing(geoip_dir / "GeoLite2-City.mmdb"),
