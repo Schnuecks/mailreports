@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local configuration and credentials: never commit
+.env
+*.pem
+secrets/
+
+# Runtime data
+data/
+*.sqlite3*
+
+# Editor / System
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+.claude/
+CLAUDE.md

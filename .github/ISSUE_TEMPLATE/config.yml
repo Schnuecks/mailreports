@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/Schnuecks/mailreports/tree/main/docs/en
+    about: Installation, all settings and how to read the pages are described in the docs.
+  - name: Security problem
+    url: https://github.com/Schnuecks/mailreports/blob/main/SECURITY.md
+    about: Please report vulnerabilities privately, not as a public issue. How to do that is described here.

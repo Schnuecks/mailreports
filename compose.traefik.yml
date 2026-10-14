@@ -1,0 +1,45 @@
+# Behind Traefik with a login middleware (forward auth, e.g. Authelia). The app trusts the
+# Remote-User header only because it is reachable from the proxy network alone:
+# no published port, TRUSTED_PROXIES limited to that network.
+services:
+  mailreports:
+    image: ghcr.io/schnuecks/mailreports:latest
+    container_name: mailreports
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      IMAP_PASSWORD_FILE: /run/secrets/imap_password
+      PUSHOVER_TOKEN_FILE: /run/secrets/pushover_token
+      PUSHOVER_USER_FILE: /run/secrets/pushover_user
+      SOURCES_FILE: /config/sources.toml
+      AUTH_HEADER: Remote-User
+      TRUSTED_PROXIES: 172.16.0.0/12      # the proxy network, adjust
+    secrets: [imap_password, pushover_token, pushover_user]
+    volumes:
+      - ./data:/data
+      - ./sources.toml:/config/sources.toml:ro
+      - /path/to/geoip:/geoip:ro
+    networks: [proxy]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.mailreports.rule: Host(`dmarc.example.org`)
+      traefik.http.routers.mailreports.entrypoints: websecure
+      traefik.http.routers.mailreports.tls.certresolver: letsencrypt
+      traefik.http.routers.mailreports.middlewares: auth@file
+      traefik.http.services.mailreports.loadbalancer.server.port: "8080"
+
+networks:
+  proxy:
+    external: true
+
+secrets:
+  imap_password:
+    file: ./secrets/imap_password.txt
+  pushover_token:
+    file: ./secrets/pushover_token.txt
+  pushover_user:
+    file: ./secrets/pushover_user.txt

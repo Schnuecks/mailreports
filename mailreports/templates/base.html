@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="{{ current_language() }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{% endblock %} · {{ app_title or "mailreports" }}</title>
+<link rel="icon" href="{{ logo_url or '/static/icon.svg' }}">
+<link rel="stylesheet" href="/static/style.css?v={{ version }}">
+<script src="/static/app.js?v={{ version }}" defer></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">
+    <img src="{{ logo_url or '/static/icon.svg' }}" alt="" width="34" height="34">
+    <span>{{ app_title or "mailreports" }}</span>
+  </a>
+  <nav class="main-nav" aria-label="{{ _('Hauptmenü') }}">
+    <a href="/?days={{ days }}" {% if nav == 'overview' or nav == 'domain' %}aria-current="page"{% endif %}>{{ _("Übersicht") }}</a>
+    <a href="/reports?days={{ days }}" {% if nav in ('reports', 'report') %}aria-current="page"{% endif %}>{{ _("DMARC") }}</a>
+    <a href="/tls?days={{ days }}" {% if nav in ('tls', 'tls_report') %}aria-current="page"{% endif %}>{{ _("TLS") }}</a>
+    <a href="/sources?days={{ days }}" {% if nav == 'sources' %}aria-current="page"{% endif %}>{{ _("Absender") }}</a>
+    <a href="/help" {% if nav == 'help' %}aria-current="page"{% endif %}>{{ _("Hilfe") }}</a>
+    <a href="/status" {% if nav == 'status' %}aria-current="page"{% endif %}>{{ _("Status") }}</a>
+  </nav>
+  <div class="top-right">
+    {% if user %}<span class="user" title="{{ _('Angemeldet') }}">{{ user }}</span>{% endif %}
+    <span class="langs">{% for code, name in languages.items() %}<a href="/lang/{{ code }}" title="{{ name }}" {% if code == current_language() %}aria-current="true"{% endif %}>{{ code|upper }}</a>{% endfor %}</span>
+  </div>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer class="foot">
+  <span>mailreports {{ version }}</span>
+</footer>
+</body>
+</html>

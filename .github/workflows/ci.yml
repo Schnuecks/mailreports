@@ -1,0 +1,146 @@
+name: CI
+
+# Pull requests and version tags run everything: linter (Ruff), translation check, tests,
+# image build for all platforms and a Trivy scan for known vulnerabilities.
+# A push to main is almost always the squash of a PR that was just checked: only the linter
+# and tests run there as a safety net.
+# For pull requests the image is only test-built (not uploaded). It is uploaded for a
+# version tag (v1.2.3); afterwards the last five releases are kept (KEEP_VERSIONS).
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+env:
+  PLATFORMS: linux/amd64,linux/arm64
+  # per release 1 index + 1 image per platform (2 platforms = 3 versions), 5 releases = 15
+  KEEP_VERSIONS: 15
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m ruff check
+      - run: python tools/i18n_extract.py
+      - run: python -m pytest -q
+      - name: Tag matches __version__
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(python -c "import mailreports; print(mailreports.__version__)")
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != __version__ $version"; exit 1; }
+
+  image:
+    needs: test
+    if: github.event_name != 'push' || github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+        if: contains(env.PLATFORMS, 'arm')
+      - uses: docker/setup-buildx-action@v4
+      - id: release
+        run: echo "push=${{ startsWith(github.ref, 'refs/tags/v') }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v4
+        if: steps.release.outputs.push == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ steps.release.outputs.push }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ env.PLATFORMS }}
+          push: ${{ steps.release.outputs.push == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_type == 'tag' && github.ref_name || format('dev-{0}', github.sha) }}
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Security scan: load the amd64 image from the cache
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: mailreports:scan
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+      - name: Smoke test
+        run: |
+          docker run -d --name smoke --read-only --tmpfs /tmp -p 8080:8080 mailreports:scan
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/ > /dev/null
+          docker logs smoke
+          docker rm -f smoke
+      - uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: mailreports:scan
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+      - uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: mailreports:scan
+          severity: CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
+          skip-setup-trivy: true
+
+  dependabot-merge:
+    # Merges Dependabot proposals for patch and minor updates once all checks are green.
+    needs: [test, image]
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v3
+      - name: Merge patch and minor updates
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --squash "$PR_URL"
+
+  cleanup:
+    needs: image
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: container
+          min-versions-to-keep: ${{ env.KEEP_VERSIONS }}

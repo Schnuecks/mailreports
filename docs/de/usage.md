@@ -1,0 +1,68 @@
+# Bedienung
+
+## Übersicht
+
+Eine Karte pro Domain für den gewählten Zeitraum (7, 30, 90 Tage oder ein Jahr): der Anteil
+der Mails, die DMARC bestanden haben, die Zahl der Mails und Berichte, die veröffentlichte
+Richtlinie und der Verlauf pro Tag (unten bestanden, oben durchgefallen). Unter den Karten
+listet **Was auffiel** die Mails, die DMARC verfehlt haben, zusammengefasst pro Domain und
+sendender IP, in Klartext.
+
+Jede Karte führt zur **Domain-Seite** mit erklärter Richtlinie, Verlauf, den häufigsten
+sendenden IPs, TLS-Ergebnissen und den neuesten Berichten.
+
+## DMARC-Berichte
+
+Die Liste lässt sich nach Domain, berichtender Organisation und „nur mit Fehlschlägen“
+filtern. Ein Bericht zeigt jeden Eintrag zweimal: zuerst als Satz („Diese 12 Mails kamen
+von …“), dann im Detail mit sendender IP, Reverse-DNS, Land und Netz, Header-From und
+Envelope-From, jeder DKIM-Signatur mit Selektor und der SPF-Prüfung.
+
+Gut zu wissen beim Lesen:
+
+- Eine Mail besteht DMARC, wenn DKIM **oder** SPF bestanden hat **und** zur
+  Absender-Domain passt.
+- Nur SPF durchgefallen ist bei weitergeleiteten Mails normal; DKIM übersteht die
+  Weiterleitung.
+- Berichte beschreiben einen Tag, meist von 0:00 bis 23:59 Uhr UTC. Große Anbieter schicken
+  sie am Folgetag, deshalb ist „heute“ fast immer leer.
+
+## Absender
+
+Alle sendenden IPs des Zeitraums mit ihrer Einordnung:
+
+| Einordnung | Bedeutung |
+|---|---|
+| eigener Server | passt zu einem `own`-Eintrag in `sources.toml` |
+| beauftragter Dienst | passt zu einem `relay`-Eintrag, z. B. über den DKIM-Selektor |
+| Weiterleitung | ein `forwarder`-Eintrag, ein Weiterleitungs-Hinweis im Bericht oder gültiges DKIM bei fehlgeschlagenem SPF |
+| unbekannt | alles andere |
+
+Ein **unbekannter Absender, der DMARC besteht**, ist meist ein Dienst, den du noch nicht
+eingetragen hast. Ein **unbekannter Absender, der durchfällt**, ist meist jemand, der deine
+Domain missbrauchen will – genau das hat DMARC verhindert. Der Abschnitt **Bekannte
+Quellen** unten zeigt, was die App aus `sources.toml` gelesen hat.
+
+## TLS-Berichte
+
+Pro Domain und Richtlinie (MTA-STS, DANE oder keine) die Zahl der erfolgreichen und
+fehlgeschlagenen Verbindungen und bei Fehlern, was schiefging und was zu tun ist (etwa ein
+abgelaufenes Zertifikat oder ein TLSA-Eintrag, der nach einem Zertifikatswechsel nicht mehr
+passt).
+
+## Status
+
+Postfach und letzter Abruf (mit Knopf **Jetzt abrufen**), Hochladen von Berichtsdateien, die
+Zahl der gespeicherten Berichte, welche Zusatzdienste aktiv sind (GeoIP, Reverse-DNS,
+bekannte Quellen, Pushover) und die zuletzt verarbeiteten Mails, mit dem Grund, wenn eine
+Mail keinen verwertbaren Bericht enthielt.
+
+## Kommandozeile
+
+```bash
+python -m mailreports check            # Einstellungen und IMAP-Anmeldung
+python -m mailreports fetch            # einmal abrufen
+python -m mailreports import DATEIEN...  # Dateien oder Ordner importieren (.xml .json .gz .zip .eml)
+```
+
+Im Docker-Container: `docker compose exec mailreports python -m mailreports check`.

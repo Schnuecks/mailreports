@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ rep.domain }} · {{ rep.org_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ rep.domain }} <small>· {{ rep.org_name }}</small></h1>
+  <a class="btn ghost" href="/reports?domain={{ rep.domain|urlencode }}">← {{ _("alle Berichte") }}</a>
+</div>
+
+<div class="grid stats">
+  <div class="card stat"><span class="lbl">{{ _("Zeitraum") }}</span><strong class="small">{{ fmt.datetime(rep.date_begin) }} –<br>{{ fmt.datetime(rep.date_end) }}</strong></div>
+  <div class="card stat"><span class="lbl">{{ _("Mails") }}</span><strong>{{ num(total) }}</strong></div>
+  <div class="card stat"><span class="lbl">{{ _("DMARC bestanden") }}</span>{{ m.rate(passed / total * 100 if total else none) }}</div>
+  <div class="card stat"><span class="lbl">{{ _("Richtlinie laut Empfänger") }}</span><strong class="small"><code>p={{ rep.p or "?" }}</code>{% if rep.sp %} <code>sp={{ rep.sp }}</code>{% endif %} <code>adkim={{ rep.adkim or "r" }}</code> <code>aspf={{ rep.aspf or "r" }}</code>{% if rep.pct and rep.pct != '100' %} <code>pct={{ rep.pct }}</code>{% endif %}</strong></div>
+</div>
+
+<section class="card">
+  <h2>{{ _("In Klartext") }}</h2>
+  {% for item in items %}{{ m.explanation(item) }}{% else %}<p class="muted">{{ _("Der Bericht enthält keine Einträge.") }}</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>{{ _("Einträge im Detail") }}</h2>
+  {% for item in items %}{% set r = item.r %}
+  <details class="record">
+    <summary>
+      {{ m.status_icon(item.ex.level) }}
+      <code>{{ r.source_ip }}</code>
+      <span>{{ ngettext("{n} Mail", "{n} Mails", r.count) }}</span>
+      {{ m.kind_badge(item.verdict.kind, item.verdict.source) }}
+      <span class="badge disp-{{ r.disposition }}">{{ ex.disposition_label(r.disposition) }}</span>
+    </summary>
+    <div class="record-body">
+      <dl class="kv">
+        <dt>{{ _("Absender-IP") }}</dt><dd>{{ m.ip_cell(r.source_ip, item.info) }}</dd>
+        <dt>{{ _("Header-From") }}</dt><dd>{{ r.header_from or "–" }}</dd>
+        <dt>{{ _("Envelope-From") }}</dt><dd>{{ r.envelope_from or "–" }}</dd>
+        {% if r.envelope_to %}<dt>{{ _("Envelope-To") }}</dt><dd>{{ r.envelope_to }}</dd>{% endif %}
+        <dt>{{ _("Ergebnis DMARC") }}</dt><dd>DKIM {{ m.result(r.dkim_eval) }} · SPF {{ m.result(r.spf_eval) }}</dd>
+        {% for reason in loads(r.reasons) %}<dt>{{ _("Ausnahme") }}</dt><dd>{{ reason.type }}{% if reason.comment %} – {{ reason.comment }}{% endif %}</dd>{% endfor %}
+      </dl>
+      <h4>{{ _("DKIM-Signaturen") }}</h4>
+      {% set sigs = loads(r.dkim) %}
+      {% if sigs %}<ul class="auth">{% for d in sigs %}<li>{{ m.result(d.result) }} <code>{{ d.selector or "?" }}._domainkey.{{ d.domain }}</code>{% if d.human_result %} <small>{{ d.human_result }}</small>{% endif %}</li>{% endfor %}</ul>
+      {% else %}<p class="muted">{{ _("keine Signatur") }}</p>{% endif %}
+      <h4>{{ _("SPF-Prüfung") }}</h4>
+      {% set spfs = loads(r.spf) %}
+      {% if spfs %}<ul class="auth">{% for s in spfs %}<li>{{ m.result(s.result) }} <code>{{ s.domain }}</code>{% if s.scope %} <small>({{ s.scope }})</small>{% endif %}</li>{% endfor %}</ul>
+      {% else %}<p class="muted">{{ _("keine Angabe") }}</p>{% endif %}
+    </div>
+  </details>
+  {% endfor %}
+</section>
+
+<section class="card meta">
+  <h2>{{ _("Bericht") }}</h2>
+  <dl class="kv">
+    <dt>{{ _("Berichtet von") }}</dt><dd>{{ rep.org_name }}{% if rep.org_email %} &lt;{{ rep.org_email }}&gt;{% endif %}</dd>
+    <dt>{{ _("Bericht-ID") }}</dt><dd><code>{{ rep.report_id }}</code></dd>
+    <dt>{{ _("Eingegangen") }}</dt><dd>{{ fmt.datetime(rep.received_at) }}</dd>
+    {% for e in loads(rep.errors) %}<dt>{{ _("Hinweis des Empfängers") }}</dt><dd>{{ e }}</dd>{% endfor %}
+  </dl>
+</section>
+{% endblock %}

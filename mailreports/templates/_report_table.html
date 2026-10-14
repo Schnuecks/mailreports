@@ -1,0 +1,16 @@
+{% if reports %}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("durchgefallen") }}</th></tr></thead>
+  <tbody>
+  {% for r in reports %}
+    <tr class="link-row">
+      <td><a href="/reports/{{ r.id }}">{{ fmt.range(r.date_begin, r.date_end) }}</a></td>
+      <td>{{ r.domain }}</td>
+      <td>{{ r.org_name }}</td>
+      <td class="num">{{ num(r.messages) }}</td>
+      <td class="num">{% if r.failed %}<span class="bad-text">{{ num(r.failed) }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="muted">{{ _("Keine Berichte gefunden.") }}</p>{% endif %}

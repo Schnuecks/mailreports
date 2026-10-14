@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ _("TLS-Bericht") }} · {{ rep.org_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("TLS-Bericht") }} <small>· {{ rep.org_name }}</small></h1>
+  <a class="btn ghost" href="/tls">← {{ _("alle TLS-Berichte") }}</a>
+</div>
+<section class="card meta">
+  <dl class="kv">
+    <dt>{{ _("Zeitraum") }}</dt><dd>{{ fmt.datetime(rep.date_begin) }} – {{ fmt.datetime(rep.date_end) }}</dd>
+    <dt>{{ _("Berichtet von") }}</dt><dd>{{ rep.org_name }}{% if rep.contact %} ({{ rep.contact }}){% endif %}</dd>
+    <dt>{{ _("Bericht-ID") }}</dt><dd><code>{{ rep.report_id }}</code></dd>
+  </dl>
+</section>
+{% for p in policies %}
+<section class="card">
+  <div class="card-head">
+    <h2>{{ p.policy_domain }} <small>· {{ ex.tls_policy_label(p.policy_type) }}</small></h2>
+    <span>{% if p.failure %}{{ m.status_icon('bad') }}{% else %}{{ m.status_icon('ok') }}{% endif %} {{ num(p.success) }} {{ _("erfolgreich") }}{% if p.failure %}, <span class="bad-text">{{ num(p.failure) }} {{ _("fehlgeschlagen") }}</span>{% endif %}</span>
+  </div>
+  {% if not p.failure %}
+  <p>{{ _("Alle {n} Verbindungen waren verschlüsselt und gültig.", n=num(p.success)) }}</p>
+  {% endif %}
+  {% set mx = loads(p.mx_hosts) %}{% if mx %}<p class="muted small">MX: {{ mx|join(", ") }}</p>{% endif %}
+  {% set ps = loads(p.policy_strings) %}{% if ps %}<details><summary>{{ _("Richtlinie laut Bericht") }}</summary><pre>{{ ps|join("\n") }}</pre></details>{% endif %}
+  {% for f in p.failures %}{% set info = ex.tls_result(f.result_type) %}
+  <div class="explain level-bad">{{ m.status_icon('bad') }}<div>
+    <h3>{{ info[0] }} <small>· {{ ngettext("{n} Verbindung", "{n} Verbindungen", f.failed_session_count) }}</small></h3>
+    <p>{{ info[1] }}</p>
+    <dl class="kv small">
+      {% if f.receiving_mx_hostname %}<dt>{{ _("Empfangender MX") }}</dt><dd>{{ f.receiving_mx_hostname }}{% if f.receiving_ip %} ({{ f.receiving_ip }}){% endif %}</dd>{% endif %}
+      {% if f.sending_mta_ip %}<dt>{{ _("Sendender Server") }}</dt><dd>{{ f.sending_mta_ip }}</dd>{% endif %}
+      {% if f.failure_reason_code %}<dt>{{ _("Code") }}</dt><dd><code>{{ f.failure_reason_code }}</code></dd>{% endif %}
+      {% if f.additional_information %}<dt>{{ _("Zusatzinfo") }}</dt><dd>{{ f.additional_information }}</dd>{% endif %}
+    </dl>
+  </div></div>
+  {% endfor %}
+</section>
+{% endfor %}
+{% endblock %}

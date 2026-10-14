@@ -1,0 +1,55 @@
+name: Bug report
+description: Something does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please fill in as much as you can;
+        German is fine too.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+      placeholder: |
+        Reports from one provider are listed as "neither XML nor JSON" on the status page.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: mailreports version
+      description: Shown in the page footer.
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part is affected?
+      multiple: true
+      options:
+        - IMAP fetch
+        - Reading a report file
+        - Explanations / classification
+        - Notifications
+        - Login / access
+        - The pages (layout, charts)
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: Your environment variables and sources.toml, without passwords and tokens.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: The container log (`docker compose logs mailreports`).
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, or the affected report file with your domains and IPs replaced.

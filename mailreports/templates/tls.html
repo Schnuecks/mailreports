@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ _("TLS-Berichte") }}{% endblock %}
+{% block content %}
+{% set q = "domain=" ~ (domain|urlencode) ~ ("&failed=1" if failed else "") %}
+<div class="page-head">
+  <h1>{{ _("TLS-Berichte") }}</h1>
+  {{ m.periods_switch(days, periods, "&" ~ q) }}
+</div>
+<p class="lead muted">{{ _("Andere Mailserver melden hier, ob sie deine Server verschlüsselt erreichen konnten (SMTP TLS Reporting, RFC 8460).") }}</p>
+
+{% if overview %}
+<div class="grid domains">
+{% for t in overview if not domain or t.policy_domain == domain %}
+  <div class="card">
+    <div class="dc-head"><h2>{{ t.policy_domain }}</h2><span class="badge">{{ ex.tls_policy_label(t.policy_type) }}</span></div>
+    {% set all = t.ok + t.bad %}
+    <div class="dc-stats">
+      <div class="big">{{ m.rate(t.ok / all * 100 if all else none) }}<span class="lbl">{{ _("Verbindungen erfolgreich") }}</span></div>
+      <dl>
+        <div><dt>{{ _("erfolgreich") }}</dt><dd>{{ num(t.ok) }}</dd></div>
+        <div><dt>{{ _("fehlgeschlagen") }}</dt><dd {% if t.bad %}class="bad-text"{% endif %}>{{ num(t.bad) }}</dd></div>
+        <div><dt>{{ _("Berichte") }}</dt><dd>{{ num(t.reports) }}</dd></div>
+      </dl>
+    </div>
+    {% if t.mx_list %}<p class="muted small">MX: {{ t.mx_list|sort|join(", ") }}</p>{% endif %}
+    {% for type, n in t.types.items() %}{% set info = ex.tls_result(type) %}
+      <div class="explain level-bad">{{ m.status_icon('bad') }}<div><h3>{{ info[0] }} <small>· {{ ngettext("{n} Verbindung", "{n} Verbindungen", n) }}</small></h3><p>{{ info[1] }}</p></div></div>
+    {% endfor %}
+  </div>
+{% endfor %}
+</div>
+{% endif %}
+
+<form class="filters card" method="get">
+  <input type="hidden" name="days" value="{{ days }}">
+  <label>{{ _("Domain") }}
+    <select name="domain" data-autosubmit>
+      <option value="">{{ _("alle") }}</option>
+      {% for d in domains %}<option {% if d == domain %}selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="check"><input type="checkbox" name="failed" value="1" {% if failed %}checked{% endif %} data-autosubmit> {{ _("nur mit Fehlschlägen") }}</label>
+  <noscript><button class="btn">{{ _("Filtern") }}</button></noscript>
+</form>
+
+<section class="card">
+  <p class="muted">{{ ngettext("{n} Bericht", "{n} Berichte", total) }}</p>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th>{{ _("Richtlinie") }}</th><th class="num">{{ _("erfolgreich") }}</th><th class="num">{{ _("fehlgeschlagen") }}</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><a href="/tls/{{ r.id }}">{{ fmt.range(r.date_begin, r.date_end) }}</a></td>
+        <td>{{ (r.domains or "").replace(",", ", ") }}</td>
+        <td>{{ r.org_name }}</td>
+        <td>{% for t in (r.types or "").split(",") if t %}{{ ex.tls_policy_label(t) }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td class="num">{{ num(r.success or 0) }}</td>
+        <td class="num">{% if r.failure %}<span class="bad-text">{{ num(r.failure) }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">{{ _("Keine Berichte gefunden.") }}</p>{% endif %}
+  {{ m.pager(page, pages, "days=" ~ days ~ "&" ~ q) }}
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ _("Absender") }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("Absender") }}</h1>
+  {{ m.periods_switch(days, periods, "&domain=" ~ (domain|urlencode)) }}
+</div>
+<form class="filters card" method="get">
+  <input type="hidden" name="days" value="{{ days }}">
+  <label>{{ _("Domain") }}
+    <select name="domain" data-autosubmit>
+      <option value="">{{ _("alle") }}</option>
+      {% for d in domains %}<option {% if d == domain %}selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select>
+  </label>
+  <noscript><button class="btn">{{ _("Filtern") }}</button></noscript>
+</form>
+<section class="card">
+  <p class="muted">{{ _("Alle IP-Adressen, die laut den Berichten Mails mit deinen Domains verschickt haben. Bekannte Quellen kommen aus der Datei sources.toml.") }}</p>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("bestanden") }}</th><th>{{ _("Ergebnis beim Empfänger") }}</th><th>{{ _("Absender-Domains") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{{ m.ip_cell(row.ip, row.info) }}</td>
+        <td>{{ m.kind_badge(row.kind, row.source) }}{% if row.source and row.source.note %}<small class="note">{{ row.source.note }}</small>{% endif %}</td>
+        <td class="num">{{ num(row.messages) }}</td>
+        <td class="num">{{ m.rate(row.rate) }}</td>
+        <td><small>{% for d, n in row.dispositions.most_common() %}{{ ex.disposition_label(d) }}: {{ num(n) }}{% if not loop.last %}, {% endif %}{% endfor %}</small></td>
+        <td><small>{{ row.header_from|sort|join(", ") }}</small></td>
+        <td><small>{{ row.selectors|sort|join(", ") or "–" }}</small></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">{{ _("Keine Daten im Zeitraum.") }}</p>{% endif %}
+</section>
+{% if known %}
+<section class="card">
+  <h2>{{ _("Bekannte Quellen") }}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("Name") }}</th><th>{{ _("Art") }}</th><th>{{ _("Erkannt an") }}</th></tr></thead>
+    <tbody>
+    {% for s in known %}
+      <tr><td>{{ s.name }}{% if s.note %}<small class="note">{{ s.note }}</small>{% endif %}</td><td>{{ m.kind_badge(s.kind) }}</td>
+      <td><small>
+        {% if s.ips %}IP: {{ s.ips|join(", ") }}<br>{% endif %}
+        {% if s.ptr %}PTR: {{ s.ptr|join(", ") }}<br>{% endif %}
+        {% if s.asn %}AS: {{ s.asn|join(", ") }}<br>{% endif %}
+        {% if s.dkim_selectors %}DKIM: {{ s.dkim_selectors|join(", ") }}{% if s.dkim_domains %} ({{ s.dkim_domains|join(", ") }}){% endif %}{% endif %}
+      </small></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% macro periods_switch(days, periods, extra="") -%}
+<div class="seg" role="group" aria-label="{{ _('Zeitraum') }}">
+  {% for p in periods %}<a href="?days={{ p }}{{ extra }}" {% if p == days %}aria-current="true"{% endif %}>{{ _("{n} Tage", n=p) if p < 365 else _("1 Jahr") }}</a>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro kind_badge(kind, source=None) -%}
+<span class="badge kind-{{ kind }}">{{ ex.kind_label(kind) }}{% if source %}: {{ source.name }}{% endif %}</span>
+{%- endmacro %}
+
+{% macro status_icon(level) -%}
+{% if level == 'ok' %}<span class="icon ok" aria-hidden="true">✓</span>{% elif level == 'warn' %}<span class="icon warn" aria-hidden="true">!</span>{% else %}<span class="icon bad" aria-hidden="true">✕</span>{% endif %}
+{%- endmacro %}
+
+{% macro rate(value) -%}
+{% if value is none %}<span class="rate none">–</span>
+{% else %}<span class="rate {{ 'good' if value >= 98 else ('mid' if value >= 90 else 'low') }}">{{ pct(value) }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro result(value) -%}
+<span class="res res-{{ value or 'none' }}">{{ value or "none" }}</span>
+{%- endmacro %}
+
+{% macro explanation(item, show_report=False) -%}
+{% set e = item.ex %}
+<article class="explain level-{{ e.level }}">
+  {{ status_icon(e.level) }}
+  <div>
+    <h3>{{ e.title }}{% if show_report %} <small>· {{ item.report.domain }} · {{ item.report.org_name }} · {{ fmt.range(item.report.date_begin, item.report.date_end) }}</small>{% endif %}</h3>
+    <p>{{ e.text }}</p>
+    {% if show_report %}<a class="more" href="/reports/{{ item.report.id }}">{{ _("Zum Bericht") }} →</a>{% endif %}
+  </div>
+</article>
+{%- endmacro %}
+
+{% macro pager(page, pages, query) -%}
+{% if pages > 1 %}
+<nav class="pager" aria-label="{{ _('Seiten') }}">
+  {% if page > 1 %}<a href="?{{ query }}&page={{ page - 1 }}">← {{ _("zurück") }}</a>{% endif %}
+  <span>{{ _("Seite {a} von {b}", a=page, b=pages) }}</span>
+  {% if page < pages %}<a href="?{{ query }}&page={{ page + 1 }}">{{ _("weiter") }} →</a>{% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro legend() -%}
+<div class="legend"><span><i class="sw ok"></i>{{ _("bestanden") }}</span><span><i class="sw bad"></i>{{ _("durchgefallen") }}</span></div>
+{%- endmacro %}
+
+{% macro ip_cell(ip, info) -%}
+<div class="ip"><code>{{ ip }}</code>
+{% if info and info.ptr %}<small title="{{ _('Reverse DNS (PTR)') }}">{{ info.ptr }}{% if info.ptr_confirmed %} ✓{% endif %}</small>{% endif %}
+{% set o = ex.origin(info) %}{% if o %}<small>{{ o }}</small>{% endif %}
+</div>
+{%- endmacro %}

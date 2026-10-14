@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ _("DMARC-Berichte") }}{% endblock %}
+{% block content %}
+{% set q = "domain=" ~ (domain|urlencode) ~ "&org=" ~ (org|urlencode) ~ ("&failed=1" if failed else "") %}
+<div class="page-head">
+  <h1>{{ _("DMARC-Berichte") }}</h1>
+  {{ m.periods_switch(days, periods, "&" ~ q) }}
+</div>
+<form class="filters card" method="get">
+  <input type="hidden" name="days" value="{{ days }}">
+  <label>{{ _("Domain") }}
+    <select name="domain" data-autosubmit>
+      <option value="">{{ _("alle") }}</option>
+      {% for d in domains %}<option {% if d == domain %}selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ _("Berichtet von") }}
+    <select name="org" data-autosubmit>
+      <option value="">{{ _("alle") }}</option>
+      {% for o in orgs %}<option {% if o == org %}selected{% endif %}>{{ o }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="check"><input type="checkbox" name="failed" value="1" {% if failed %}checked{% endif %} data-autosubmit> {{ _("nur mit Fehlschlägen") }}</label>
+  <noscript><button class="btn">{{ _("Filtern") }}</button></noscript>
+</form>
+<section class="card">
+  <p class="muted">{{ ngettext("{n} Bericht", "{n} Berichte", total) }}</p>
+  {% set reports = rows %}
+  {% include "_report_table.html" with context %}
+  {{ m.pager(page, pages, "days=" ~ days ~ "&" ~ q) }}
+</section>
+{% endblock %}

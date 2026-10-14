@@ -1,0 +1,22 @@
+# Known senders. Everything that matches none of them is shown as "unknown".
+# kind: own (your mail server), relay (a service sending on your behalf), forwarder
+# A source matches by ips (addresses or networks), ptr (exact name or ".suffix"),
+# asn (needs GeoLite2-ASN.mmdb) or by a passing DKIM signature with one of dkim_selectors.
+
+[[source]]
+name = "Own mail server"
+kind = "own"
+ips = ["192.0.2.10", "2001:db8::10"]
+ptr = ["mail.example.org"]
+
+[[source]]
+name = "Newsletter service"
+kind = "relay"
+dkim_selectors = ["nl1", "nl2"]
+dkim_domains = ["example.org"]
+note = "Newsletters only"
+
+# [[source]]
+# name = "University mail forwarding"
+# kind = "forwarder"
+# ptr = [".mail.example.edu"]

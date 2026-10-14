@@ -1,0 +1,49 @@
+# Dependabot: reports vulnerabilities in dependencies and proposes updates
+# as pull requests. Every proposal runs through CI; patch and minor updates are then
+# merged by the dependabot-merge job in ci.yml, major updates stay open
+# for a manual review. Thanks to the waiting period (cooldown) only versions that are
+# already a week old are proposed: a hijacked version that is pulled after a few
+# days never arrives this way. Security updates are not delayed.
+version: 2
+updates:
+  # Python packages (requirements*.txt)
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      python:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "Dependencies"
+
+  # GitHub Actions in .github/workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "CI"
+
+  # Base image in the Dockerfile (python:3.15-slim)
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "Docker"

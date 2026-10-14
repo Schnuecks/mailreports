@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Hilfe") }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Hilfe") }}</h1></div>
+<div class="help">
+<section class="card">
+  <h2>{{ _("Worum geht es?") }}</h2>
+  <p>{{ _("Jeder kann eine Mail verschicken, in der eine fremde Absenderadresse steht. Drei Einträge im DNS deiner Domain sorgen dafür, dass empfangende Server echte von gefälschten Mails unterscheiden können: SPF, DKIM und DMARC. Große Mailanbieter schicken dir täglich einen Bericht, was sie mit Mails in deinem Namen erlebt haben – diese App sammelt und erklärt sie.") }}</p>
+</section>
+<section class="card">
+  <h2>SPF</h2>
+  <p>{{ _("Sender Policy Framework: eine Liste der Server, die für deine Domain Mails verschicken dürfen. Der Empfänger prüft, ob die IP des einliefernden Servers auf dieser Liste steht. Geprüft wird die Domain aus dem „Envelope-From“ (Return-Path), nicht die sichtbare Absenderadresse.") }}</p>
+  <p class="muted">{{ _("Schwäche: Wird eine Mail weitergeleitet, liefert sie ein fremder Server ein – SPF schlägt dann fehl, obwohl die Mail echt ist.") }}</p>
+</section>
+<section class="card">
+  <h2>DKIM</h2>
+  <p>{{ _("DomainKeys Identified Mail: Dein Mailserver unterschreibt jede Mail kryptografisch. Den öffentlichen Schlüssel findet der Empfänger im DNS unter <Selektor>._domainkey.<Domain>. Der Selektor ist nur ein Name für den Schlüssel, so können mehrere Schlüssel parallel existieren – etwa einer für den eigenen Server und einer für einen Newsletter-Dienst.") }}</p>
+  <p class="muted">{{ _("Die Signatur übersteht Weiterleitungen, solange die Mail unterwegs nicht verändert wird.") }}</p>
+</section>
+<section class="card">
+  <h2>DMARC</h2>
+  <p>{{ _("DMARC verbindet beides mit der sichtbaren Absenderadresse („Header-From“). Eine Mail besteht DMARC, wenn SPF oder DKIM bestanden hat und die geprüfte Domain zur Absenderadresse passt. Außerdem legt DMARC fest, was mit durchgefallenen Mails passieren soll:") }}</p>
+  <ul>
+    <li><code>p=none</code> – {{ _("nur beobachten und Berichte schicken") }}</li>
+    <li><code>p=quarantine</code> – {{ _("in den Spam-Ordner verschieben") }}</li>
+    <li><code>p=reject</code> – {{ _("gar nicht erst annehmen") }}</li>
+  </ul>
+  <p class="muted">{{ _("sp= gilt für Subdomains, pct= für den Anteil der Mails, auf den die Richtlinie angewandt wird.") }}</p>
+</section>
+<section class="card">
+  <h2>{{ _("Ausrichtung (Alignment)") }}</h2>
+  <p>{{ _("„Passen“ heißt bei DMARC: Die von SPF oder DKIM geprüfte Domain muss zur Absenderadresse gehören. Bei entspannter Ausrichtung (adkim=r, aspf=r) reicht dieselbe Hauptdomain, mail.example.org passt also zu example.org. Bei strenger Ausrichtung (adkim=s, aspf=s) müssen die Domains exakt gleich sein.") }}</p>
+  <p class="muted">{{ _("Darum kann eine Mail SPF „bestehen“ und trotzdem DMARC verfehlen: Ein Dienst prüft SPF für seine eigene Domain, nicht für deine.") }}</p>
+</section>
+<section class="card">
+  <h2>{{ _("Ergebnis beim Empfänger") }}</h2>
+  <p>{{ _("„zugestellt“, „Quarantäne“ und „abgewiesen“ zeigen, was der Empfänger tatsächlich getan hat. Das kann von deiner Richtlinie abweichen, etwa wenn er eine Weiterleitung als vertrauenswürdig erkennt – das steht dann als Ausnahme im Bericht.") }}</p>
+</section>
+<section class="card">
+  <h2>{{ _("Einordnung der Absender") }}</h2>
+  <dl class="kv">
+    <dt>{{ ex.kind_label("own") }}</dt><dd>{{ _("Dein eigener Mailserver, erkannt an IP, Reverse-DNS oder AS-Nummer aus sources.toml.") }}</dd>
+    <dt>{{ ex.kind_label("relay") }}</dt><dd>{{ _("Ein Dienst, der in deinem Auftrag sendet (Newsletter, Relay, Ticketsystem) – zum Beispiel an seinem DKIM-Selektor erkannt.") }}</dd>
+    <dt>{{ ex.kind_label("forwarder") }}</dt><dd>{{ _("Ein fremder Server, der eine echte Mail weitergereicht hat. Erkennbar daran, dass DKIM noch passt, SPF aber nicht.") }}</dd>
+    <dt>{{ ex.kind_label("unknown") }}</dt><dd>{{ _("Alles andere. Besteht so eine Quelle DMARC, fehlt sie vermutlich nur in sources.toml. Fällt sie durch, versucht meist jemand, deine Domain zu missbrauchen – DMARC hat genau das verhindert.") }}</dd>
+  </dl>
+</section>
+<section class="card">
+  <h2>{{ _("TLS-Berichte (TLS-RPT)") }}</h2>
+  <p>{{ _("SMTP TLS Reporting meldet, ob andere Server deine Mailserver verschlüsselt erreichen konnten. Es ergänzt zwei Verfahren, mit denen du Verschlüsselung erzwingst:") }}</p>
+  <ul>
+    <li><strong>MTA-STS</strong> – {{ _("eine Richtlinie per HTTPS unter mta-sts.<Domain>, die gültiges TLS mit passendem Zertifikat verlangt.") }}</li>
+    <li><strong>DANE</strong> – {{ _("TLSA-Einträge im per DNSSEC gesicherten DNS, die das Zertifikat des Mailservers festlegen.") }}</li>
+  </ul>
+  <p class="muted">{{ _("Fehlschläge nach einem Zertifikatswechsel deuten meist auf einen veralteten TLSA-Eintrag hin.") }}</p>
+</section>
+</div>
+{% endblock %}
