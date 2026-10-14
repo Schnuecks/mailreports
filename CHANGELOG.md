@@ -2,6 +2,13 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.4.1
+
+- **Neutral design by default** (grey and blue, light and dark); the olive green design is still
+  available with `THEME=olive`. Installations that want to keep the previous look set `THEME=olive`.
+- Chart colours checked for colour vision deficiencies (blue for passed, pink for failed)
+- Screenshots updated
+
 ## 0.4.0
 
 - **Settings page** for admins: set up Pushover, ntfy, webhook and email notifications, the

@@ -29,6 +29,7 @@ zählt als doppelt.
 | Variable | Standard | Bedeutung |
 |---|---|---|
 | `APP_TITLE` | `mailreports` | Name in der Kopfleiste und im Browser-Tab |
+| `THEME` | neutral | Farbschema: `neutral` (Grau und Blau) oder `olive` (Olivgrün); hell und dunkel richten sich nach dem Gerät |
 | `LOGO_URL` | eingebautes Symbol | Logo (34 px in der Kopfleiste) und Favicon, z. B. eine HTTPS-Adresse |
 | `DEFAULT_LANGUAGE` | Browsersprache | `de`, `en`, `fr`, `es`, `it` oder `nl` |
 | `DOMAINS` | alle | Kommagetrennt: welche Domains die Übersicht zeigt, in dieser Reihenfolge |

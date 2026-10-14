@@ -58,7 +58,7 @@ haben – statt XML und Fehlercodes.
 - **Hochladen und Importieren** älterer Berichtsdateien, **Hilfeseiten** zu SPF, DKIM,
   DMARC, Ausrichtung und TLS-Reporting
 - **Sechs Sprachen** (Deutsch, Englisch, Französisch, Spanisch, Italienisch, Niederländisch),
-  helles und dunkles Design, auch fürs Handy
+  helles und dunkles Design (neutral oder Olivgrün), auch fürs Handy
 - **Klein und einfach zu betreiben:** ein Container, eine SQLite-Datei, läuft ohne
   Root-Rechte mit schreibgeschütztem Dateisystem und eingebautem Healthcheck
 
