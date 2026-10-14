@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- **Users** and the **sign-in log** moved into **Settings** as tabs next to the notifications;
+  the main menu has one entry less
+
 ## 0.4.1
 
 - **Neutral design by default** (grey and blue, light and dark); the olive green design is still

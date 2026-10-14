@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ target.username }}{% endblock %}
 {% block content %}
-<div class="page-head"><h1>{{ target.username }}</h1><a class="btn ghost" href="/users">← {{ _("alle Benutzer") }}</a></div>
+{% include "_settings_tabs.html" %}
+<div class="page-head sub"><h2>{{ target.username }}</h2><a class="btn ghost" href="/users">← {{ _("alle Benutzer") }}</a></div>
 {% if message %}<div class="notice ok" role="status">{{ message }}</div>{% endif %}
 {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
 <div class="grid two">
