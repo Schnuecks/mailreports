@@ -2,7 +2,7 @@
 {% import "_macros.html" as m with context %}
 {% block title %}{{ _("Anmeldeprotokoll") }}{% endblock %}
 {% block content %}
-<div class="page-head"><h1>{{ _("Anmeldeprotokoll") }}</h1><a class="btn ghost" href="/users">← {{ _("Benutzer") }}</a></div>
+{% include "_settings_tabs.html" %}
 <section class="card">
   <div class="table-wrap"><table>
     <thead><tr><th>{{ _("Zeit") }}</th><th>{{ _("Benutzername") }}</th><th>{{ _("Adresse") }}</th><th>{{ _("Ergebnis") }}</th><th>{{ _("Hinweis") }}</th></tr></thead>

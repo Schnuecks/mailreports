@@ -102,6 +102,10 @@ def test_admins_only(tmp_path):
     csrf = csrf_of(client)
     assert client.post("/settings", data=FORM, follow_redirects=False).status_code == 403   # no CSRF token
     assert client.post("/settings", data={**FORM, "csrf": csrf}, follow_redirects=False).status_code == 303
+    page = client.get("/users").text
+    menu = page.split('class="main-nav"')[1].split("</nav>")[0]
+    assert 'href="/users"' not in menu and 'href="/settings" aria-current="page"' in menu
+    assert 'class="tabs"' in page and 'href="/sign-ins"' in page
     with svc.db.connect() as con:
         from mailreports import accounts
         accounts.create_user(con, "reader", "reader-password-1", is_admin=False)

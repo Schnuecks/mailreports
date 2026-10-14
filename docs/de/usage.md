@@ -97,7 +97,7 @@ Die Kontoseite (dein Name oben rechts) bietet:
 - **Passwort ändern** (beendet alle anderen Sitzungen) und **aktive Sitzungen** mit der
   Möglichkeit, sie zu beenden.
 
-Administratorinnen und Administratoren verwalten Konten unter **Benutzer** (anlegen, Passwort
+Administratorinnen und Administratoren verwalten Konten unter **Einstellungen → Benutzer** (anlegen, Passwort
 setzen, Rolle ändern, deaktivieren, zweite Faktoren zurücksetzen, löschen) und sehen das
 **Anmeldeprotokoll** mit erfolgreichen und abgelehnten Anmeldungen. Das letzte aktive
 Administratorkonto lässt sich nicht entfernen.

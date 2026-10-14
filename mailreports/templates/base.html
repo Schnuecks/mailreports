@@ -26,8 +26,7 @@
     <a href="/tls?days={{ days }}" {% if nav in ('tls', 'tls_report') %}aria-current="page"{% endif %}>{{ _("TLS") }}</a>
     <a href="/sources?days={{ days }}" {% if nav == 'sources' %}aria-current="page"{% endif %}>{{ _("Absender") }}</a>
     <a href="/status" {% if nav == 'status' %}aria-current="page"{% endif %}>{{ _("Status") }}</a>
-    {% if is_admin %}<a href="/settings" {% if nav == 'settings' %}aria-current="page"{% endif %}>{{ _("Einstellungen") }}</a>{% endif %}
-    {% if accounts_enabled and is_admin %}<a href="/users" {% if nav in ('users', 'user', 'sign_ins') %}aria-current="page"{% endif %}>{{ _("Benutzer") }}</a>{% endif %}
+    {% if is_admin %}<a href="/settings" {% if nav in ('settings', 'users', 'user', 'sign_ins') %}aria-current="page"{% endif %}>{{ _("Einstellungen") }}</a>{% endif %}
   </nav>
   {% endif %}
   <div class="top-right">

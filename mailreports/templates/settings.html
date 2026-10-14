@@ -31,7 +31,7 @@
   </div>
 {%- endmacro %}
 {% block content %}
-<div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
+{% include "_settings_tabs.html" %}
 {% if saved %}<div class="notice ok" role="status">{{ _("Gespeichert.") }}</div>{% endif %}
 {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
 {% if results %}

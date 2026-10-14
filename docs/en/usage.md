@@ -90,7 +90,7 @@ The account page (your name at the top right) offers:
 - **Change password** (ends all other sessions) and **active sessions** with the option to
   end them.
 
-Administrators manage accounts under **Users** (create, set a password, change the role,
+Administrators manage accounts under **Settings → Users** (create, set a password, change the role,
 disable, reset the second factors, delete) and see the **sign-in log** with successful and
 refused sign-ins. The last active administrator cannot be removed.
 
