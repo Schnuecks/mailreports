@@ -12,6 +12,10 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
   longer suggests changing your SPF record
 - Menu on phones wraps instead of being cut off
 - Link "Source code on GitHub" in the footer, configurable with `SOURCE_URL`
+- `AUTH_HEADER` now requires `TRUSTED_PROXIES`; without it mailreports refuses to start,
+  because anyone reaching the port could otherwise send the login header
+- Form posts are also checked against the `Origin` header for browsers without
+  `Sec-Fetch-Site`
 - Warning in the log at start when `TRUSTED_PROXIES` contains a whole network instead of
   single addresses
 - Docs and `compose.traefik.yml`: set `TRUSTED_PROXIES` to the proxy's own address (the

@@ -57,8 +57,8 @@ whole Docker network.** Every container in a trusted network could otherwise sen
 header itself. Find the address the requests really come from in the container log
 (`docker compose logs mailreports` shows the client address of every request): for a proxy
 container that is its IP in the shared network, for a proxy with `network_mode: host` it is
-the gateway of that network (e.g. `172.20.0.1`). mailreports logs a warning at start if a
-whole network is trusted. `compose.traefik.yml` shows a complete example. The display name comes from `Remote-Name`, if set.
+the gateway of that network (e.g. `172.20.0.1`). `AUTH_HEADER` without `TRUSTED_PROXIES` is refused at start, and a whole trusted network
+causes a warning in the log. `compose.traefik.yml` shows a complete example. The display name comes from `Remote-Name`, if set.
 
 ## 4. GeoIP (optional)
 

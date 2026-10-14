@@ -52,7 +52,7 @@ Domain und TLS-Fehlertyp).
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
-| `AUTH_HEADER` | – | Header mit dem Benutzernamen vom Anmelde-Proxy, z. B. `Remote-User`. Wenn gesetzt, bekommen Anfragen ohne ihn 401. |
+| `AUTH_HEADER` | – | Header mit dem Benutzernamen vom Anmelde-Proxy, z. B. `Remote-User`. Wenn gesetzt, bekommen Anfragen ohne ihn 401. Braucht `TRUSTED_PROXIES`, sonst startet mailreports nicht. |
 | `ALLOWED_GROUPS` | – | Kommagetrennt; mindestens eine muss in `Remote-Groups` stehen |
 | `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403. Am besten nur die Adresse des Proxys, nicht das ganze Netz (siehe [Installation](installation.md#3-hinter-einem-reverse-proxy-mit-anmeldung)). |
 

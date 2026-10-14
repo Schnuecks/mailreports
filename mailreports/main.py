@@ -70,8 +70,7 @@ def create_app(service: Service | None = None) -> FastAPI:
                 if not groups & set(settings.allowed_groups):
                     return PlainTextResponse("Forbidden: not in an allowed group", status_code=403)
             request.state.user = request.headers.get("Remote-Name", "").strip() or user
-        if request.method == "POST" and request.headers.get("sec-fetch-site", "same-origin") not in (
-                "same-origin", "none"):
+        if request.method == "POST" and not same_origin(request):
             return PlainTextResponse("Forbidden: cross-site request", status_code=403)
         i18n.set_language(i18n.pick_language(request.cookies.get("lang"), settings.default_language,
                                              request.headers.get("accept-language")))
@@ -84,6 +83,14 @@ def create_app(service: Service | None = None) -> FastAPI:
             "default-src 'self'; img-src 'self' https: data:; style-src 'self'; script-src 'self'; "
             "frame-ancestors 'none'")
         return response
+
+    def same_origin(request: Request) -> bool:
+        """Form posts only from our own pages (Sec-Fetch-Site, otherwise Origin against Host)."""
+        site = request.headers.get("sec-fetch-site")
+        if site:
+            return site in ("same-origin", "none")
+        origin = request.headers.get("origin")
+        return not origin or urlsplit(origin).netloc == request.headers.get("host")
 
     def days_of(request: Request) -> int:
         try:

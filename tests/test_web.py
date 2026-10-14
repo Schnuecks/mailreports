@@ -59,11 +59,23 @@ def test_upload(client, service):
 
 def test_cross_site_post_refused(client):
     assert client.post("/fetch", headers={"sec-fetch-site": "cross-site"}).status_code == 403
+    assert client.post("/fetch", headers={"origin": "https://evil.test"}).status_code == 403
+    r = client.post("/fetch", headers={"origin": "http://testserver"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_auth_header_needs_trusted_proxies(tmp_path):
+    with pytest.raises(SystemExit, match="TRUSTED_PROXIES"):
+        Service(make_settings(tmp_path, auth_header="Remote-User"))
 
 
 def test_auth_header(tmp_path):
-    svc = Service(make_settings(tmp_path, auth_header="Remote-User", allowed_groups=["admins"]))
-    with TestClient(create_app(svc)) as c:
+    import ipaddress
+    svc = Service(make_settings(tmp_path, auth_header="Remote-User", allowed_groups=["admins"],
+                                trusted_proxies=[ipaddress.ip_network("10.0.0.1/32")]))
+    with TestClient(create_app(svc), client=("10.0.0.2", 5000)) as c:
+        assert c.get("/", headers={"Remote-User": "a", "Remote-Groups": "admins"}).status_code == 403
+    with TestClient(create_app(svc), client=("10.0.0.1", 5000)) as c:
         assert c.get("/").status_code == 401
         assert c.get("/", headers={"Remote-User": "a", "Remote-Groups": "users"}).status_code == 403
         r = c.get("/", headers={"Remote-User": "a", "Remote-Groups": "users,admins", "Remote-Name": "Andrea"})

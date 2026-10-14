@@ -17,6 +17,10 @@ log = logging.getLogger(__name__)
 class Service:
     def __init__(self, settings: config.Settings | None = None):
         self.settings = settings or config.load()
+        if self.settings.auth_header and not self.settings.trusted_proxies:
+            # Without it anyone who reaches the port could send the header and sign in as anybody
+            raise SystemExit("AUTH_HEADER needs TRUSTED_PROXIES: set it to the address of your reverse proxy "
+                             "(for a proxy with network_mode: host, the gateway of the proxy network).")
         self.db = Database(self.settings.db_path)
         self.sources = load_sources(self.settings.sources_file)
         self.geo = enrich.GeoIP(self.settings)

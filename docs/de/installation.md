@@ -57,8 +57,8 @@ Proxys, nicht auf das ganze Docker-Netz.** Sonst könnte jeder Container im vert
 den Anmelde-Header selbst mitschicken. Von welcher Adresse die Anfragen wirklich kommen, steht
 im Container-Log (`docker compose logs mailreports` zeigt bei jeder Anfrage die Absenderadresse):
 bei einem Proxy-Container ist es seine IP im gemeinsamen Netz, bei einem Proxy mit
-`network_mode: host` das Gateway dieses Netzes (z. B. `172.20.0.1`). mailreports warnt beim
-Start im Log, wenn ein ganzes Netz als vertrauenswürdig eingetragen ist. `compose.traefik.yml`
+`network_mode: host` das Gateway dieses Netzes (z. B. `172.20.0.1`). `AUTH_HEADER` ohne `TRUSTED_PROXIES` verweigert mailreports beim
+Start, ein ganzes vertrautes Netz führt zu einer Warnung im Log. `compose.traefik.yml`
 zeigt ein vollständiges Beispiel. Der angezeigte Name kommt aus `Remote-Name`, falls gesetzt.
 
 ## 4. GeoIP (optional)
