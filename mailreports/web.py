@@ -34,7 +34,10 @@ def fmt_number(value) -> str:
 def fmt_pct(value) -> str:
     if value is None:
         return "–"
-    text = "100" if value >= 99.95 else f"{value:.1f}"
+    if value >= 99.95 or value <= 0:
+        text = str(round(value))
+    else:
+        text = f"{value:.1f}"
     return (text.replace(".", ",") if i18n.current() == "de" else text) + " %"
 
 
@@ -55,7 +58,7 @@ class Formatter:
         return dt.strftime("%d.%m.%Y %H:%M") if i18n.current() == "de" else dt.strftime("%Y-%m-%d %H:%M")
 
     def day(self, d) -> str:
-        return d.strftime("%d.%m.") if i18n.current() == "de" else d.strftime("%m-%d")
+        return d.strftime("%d.%m.") if i18n.current() == "de" else f"{d:%b} {d.day}"
 
     def range(self, begin, end) -> str:
         if not begin:
@@ -112,7 +115,7 @@ def setup(service) -> None:
     env.globals.update(
         _=i18n.gettext, ngettext=i18n.ngettext, fmt=fmt, num=fmt_number, pct=fmt_pct,
         bar_chart=bar_chart, loads=loads, ex=explain, version=__version__,
-        app_title=s.app_title, logo_url=s.logo_url, languages=i18n.LANGUAGES,
+        app_title=s.app_title, logo_url=s.logo_url, source_url=s.source_url, languages=i18n.LANGUAGES,
         current_language=i18n.current,
     )
     service.tz = tz

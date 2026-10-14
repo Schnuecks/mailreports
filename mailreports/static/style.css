@@ -235,11 +235,15 @@ select, input[type=file] { font: inherit; color: var(--text); background: var(--
 .help .card p:last-child { margin-bottom: 0; }
 
 @media (max-width: 760px) {
-  .top { gap: .6rem; padding: 0 .75rem; }
-  .brand span { display: none; }
+  .top { height: auto; flex-wrap: wrap; gap: .25rem .6rem; padding: .5rem .75rem; }
+  .brand { flex: 1; }
+  .top-right { order: 2; }
+  .main-nav { order: 3; flex-basis: 100%; flex-wrap: wrap; gap: 0; margin: 0 -.25rem; }
+  .main-nav a { padding: .3rem .5rem; }
   .top-right .user { display: none; }
   main { padding: 1rem; }
   .dc-stats { flex-wrap: wrap; }
   dl.kv { grid-template-columns: 1fr; }
   dl.kv dt { margin-top: .4rem; }
 }
+.foot a { color: var(--muted); }

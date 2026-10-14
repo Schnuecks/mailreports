@@ -87,7 +87,7 @@ def day_records(rnd: random.Random, domain: str, day: int) -> list[str]:
 
 def tls_json(org, rid, start, end, domain, failures):
     return json.dumps({
-        "organization-name": org, "contact-info": "smtp-tls-reporting@" + org.lower().replace(" ", ""),
+        "organization-name": org, "contact-info": "smtp-tls-reporting@example.com",
         "report-id": rid,
         "date-range": {"start-datetime": datetime.fromtimestamp(start, UTC).isoformat().replace("+00:00", "Z"),
                        "end-datetime": datetime.fromtimestamp(end, UTC).isoformat().replace("+00:00", "Z")},

@@ -8,14 +8,14 @@
 </div>
 
 <div class="grid stats">
-  <div class="card stat"><span class="lbl">{{ _("Zeitraum") }}</span><strong class="small">{{ fmt.datetime(rep.date_begin) }} –<br>{{ fmt.datetime(rep.date_end) }}</strong></div>
+  <div class="card stat"><span class="lbl">{{ _("Zeitraum") }}</span><strong class="small">{{ fmt.range(rep.date_begin, rep.date_end) }}</strong></div>
   <div class="card stat"><span class="lbl">{{ _("Mails") }}</span><strong>{{ num(total) }}</strong></div>
   <div class="card stat"><span class="lbl">{{ _("DMARC bestanden") }}</span>{{ m.rate(passed / total * 100 if total else none) }}</div>
   <div class="card stat"><span class="lbl">{{ _("Richtlinie laut Empfänger") }}</span><strong class="small"><code>p={{ rep.p or "?" }}</code>{% if rep.sp %} <code>sp={{ rep.sp }}</code>{% endif %} <code>adkim={{ rep.adkim or "r" }}</code> <code>aspf={{ rep.aspf or "r" }}</code>{% if rep.pct and rep.pct != '100' %} <code>pct={{ rep.pct }}</code>{% endif %}</strong></div>
 </div>
 
 <section class="card">
-  <h2>{{ _("In Klartext") }}</h2>
+  <h2>{{ _("Im Klartext") }}</h2>
   {% for item in items %}{{ m.explanation(item) }}{% else %}<p class="muted">{{ _("Der Bericht enthält keine Einträge.") }}</p>{% endfor %}
 </section>
 
@@ -36,7 +36,7 @@
         <dt>{{ _("Header-From") }}</dt><dd>{{ r.header_from or "–" }}</dd>
         <dt>{{ _("Envelope-From") }}</dt><dd>{{ r.envelope_from or "–" }}</dd>
         {% if r.envelope_to %}<dt>{{ _("Envelope-To") }}</dt><dd>{{ r.envelope_to }}</dd>{% endif %}
-        <dt>{{ _("Ergebnis DMARC") }}</dt><dd>DKIM {{ m.result(r.dkim_eval) }} · SPF {{ m.result(r.spf_eval) }}</dd>
+        <dt>{{ _("DMARC-Ergebnis") }}</dt><dd>DKIM {{ m.result(r.dkim_eval) }} · SPF {{ m.result(r.spf_eval) }}</dd>
         {% for reason in loads(r.reasons) %}<dt>{{ _("Ausnahme") }}</dt><dd>{{ reason.type }}{% if reason.comment %} – {{ reason.comment }}{% endif %}</dd>{% endfor %}
       </dl>
       <h4>{{ _("DKIM-Signaturen") }}</h4>

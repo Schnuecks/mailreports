@@ -35,8 +35,9 @@ def test_own_server_passes(tmp_path):
     assert v.kind == "own"
     e = explain_record(rec(), v, None, POLICY)
     assert e.level == "ok"
-    assert "Diese 12 Mails kamen von Eigener Server" in e.text
-    assert "DKIM-Selektor 2026a" in e.text and "DMARC bestanden" in e.text
+    assert e.title == "DMARC bestanden"
+    assert e.text == ("Diese 12 Mails kamen von Eigener Server: korrekt mit example.org signiert "
+                      "(DKIM-Selektor 2026a), IP per SPF für example.org erlaubt.")
 
 
 def test_relay_by_dkim_selector():
@@ -70,4 +71,13 @@ def test_spoofer_in_plain_words():
 def test_english():
     i18n.set_language("en")
     e = explain_record(rec(), classify([], rec(), None), None, POLICY)
-    assert "DMARC passed" in e.text
+    assert e.title == "DMARC passed"
+    assert e.text.startswith("These 12 emails came from unknown sender 192.0.2.10: correctly signed")
+
+
+def test_translations_keep_placeholders():
+    import re
+
+    from mailreports.i18n import catalog
+    for key, value in catalog("en").items():
+        assert set(re.findall(r"\{\w+\}", key)) == set(re.findall(r"\{\w+\}", value)), key

@@ -32,6 +32,7 @@
 </main>
 <footer class="foot">
   <span>mailreports {{ version }}</span>
+  {% if source_url %}· <a href="{{ source_url }}" rel="noopener">{{ _("Quellcode auf GitHub") }}</a>{% endif %}
 </footer>
 </body>
 </html>

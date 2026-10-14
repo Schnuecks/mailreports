@@ -32,6 +32,7 @@ zählt als doppelt.
 | `DEFAULT_LANGUAGE` | Browsersprache | `de` oder `en` |
 | `DOMAINS` | alle | Kommagetrennt: welche Domains die Übersicht zeigt, in dieser Reihenfolge |
 | `TZ` | `UTC` | Zeitzone für Datumsangaben, z. B. `Europe/Berlin` |
+| `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link zum Quellcode in der Fußzeile; leer blendet ihn aus |
 
 ## Benachrichtigungen
 

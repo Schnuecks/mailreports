@@ -5,7 +5,7 @@
 {%- endmacro %}
 
 {% macro kind_badge(kind, source=None) -%}
-<span class="badge kind-{{ kind }}">{{ ex.kind_label(kind) }}{% if source %}: {{ source.name }}{% endif %}</span>
+<span class="badge kind-{{ kind }}" title="{{ ex.kind_label(kind) }}">{{ source.name if source else ex.kind_label(kind) }}</span>
 {%- endmacro %}
 
 {% macro status_icon(level) -%}

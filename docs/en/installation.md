@@ -82,7 +82,7 @@ Reports saved elsewhere can be uploaded on the status page, or imported on the c
 docker compose exec mailreports python -m mailreports import /data/old-reports/
 ```
 
-Files may be `.xml`, `.json`, `.gz`, `.zip` or whole mails (`.eml`). Known reports are skipped.
+Files may be `.xml`, `.json`, `.gz`, `.zip` or whole emails (`.eml`). Known reports are skipped.
 
 ## Update
 

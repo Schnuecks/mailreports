@@ -43,10 +43,10 @@ def origin(info) -> str:
 
 def kind_label(kind: str) -> str:
     return {
-        "own": _("eigener Server"),
-        "relay": _("beauftragter Dienst"),
+        "own": _("Eigener Server"),
+        "relay": _("Beauftragter Dienst"),
         "forwarder": _("Weiterleitung"),
-        "unknown": _("unbekannt"),
+        "unknown": _("Unbekannt"),
     }.get(kind, kind)
 
 
@@ -72,9 +72,9 @@ def disposition_text(disposition: str) -> str:
 
 def disposition_label(disposition: str) -> str:
     return {
-        "none": _("zugestellt"),
+        "none": _("Zugestellt"),
         "quarantine": _("Quarantäne"),
-        "reject": _("abgewiesen"),
+        "reject": _("Abgewiesen"),
     }.get(disposition, disposition or "?")
 
 
@@ -105,14 +105,20 @@ def explain_record(record, verdict: Verdict, info, policy) -> Explanation:
             sel = (good_sig or {}).get("selector") or "?"
             parts.append(_("korrekt mit {domain} signiert (DKIM-Selektor {sel})", domain=domain, sel=sel))
         if record["spf_eval"] == "pass":
-            parts.append(_("die IP ist per SPF für {domain} erlaubt", domain=domain))
-        text = _("{mails} kamen von {who} und waren {details}. DMARC bestanden.",
-                 mails=mails, who=who, details=_(" und ").join(parts))
+            parts.append(_("IP per SPF für {domain} erlaubt", domain=domain))
+        text = _("{mails} kamen von {who}: {details}.", mails=mails, who=who, details=", ".join(parts))
         if record["spf_eval"] != "pass" and verdict.kind == "forwarder":
             text += " " + _("SPF passte nicht, weil die Mails weitergeleitet wurden – "
                             "die DKIM-Signatur hat das überstanden, das ist in Ordnung.")
         elif record["spf_eval"] != "pass" and verdict.kind in ("own", "relay"):
-            text += " " + _("SPF passte allerdings nicht – prüfe, ob diese IP im SPF-Eintrag steht.")
+            other = sorted({s.get("domain", "") for s in spf
+                            if s.get("result") == "pass" and s.get("domain") != domain})
+            if other:
+                text += " " + _("SPF hat für die eigene Absender-Domain des Dienstes bestanden ({env}), nicht für "
+                                "{domain} – bei solchen Diensten üblich, DKIM deckt das ab.",
+                                env=", ".join(other), domain=domain)
+            else:
+                text += " " + _("SPF passte allerdings nicht – prüfe, ob diese IP im SPF-Eintrag steht.")
         elif record["dkim_eval"] != "pass" and verdict.kind in ("own", "relay"):
             text += " " + _("DKIM fehlte oder passte nicht – nur SPF hat DMARC gerettet. "
                             "Bei Weiterleitungen würden diese Mails durchfallen.")

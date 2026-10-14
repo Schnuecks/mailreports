@@ -13,27 +13,14 @@ Security problems go to **Security → Report a vulnerability** instead, see
 
 ## Development
 
-```bash
-python -m venv .venv && . .venv/bin/activate
-pip install -r requirements-dev.txt
-python -m ruff check
-python -m pytest -q
-python tools/i18n_extract.py          # must report 0 missing
-```
-
-Run it locally with demo data:
-
-```bash
-python tools/make_demo.py /tmp/demo
-export DATA_DIR=/tmp/demo-data SOURCES_FILE=/tmp/demo/sources.toml DNS_LOOKUPS=false
-python -m mailreports import /tmp/demo
-python -m uvicorn --factory mailreports.main:create_app --port 8080
-```
+How to run it locally with demo data, the checks, translations and screenshots are
+described in [docs/en/development.md](docs/en/development.md).
 
 ## Pull requests
 
 1. Open an issue first for larger changes, so we can agree on the approach.
-2. Tests, linter and translation check must pass.
+2. Tests, linter and translation check must pass (`python -m ruff check`, `python -m pytest -q`,
+   `python tools/i18n_extract.py`).
 3. Texts in the code are German and serve as keys; add the English translation to
    `mailreports/locales/en.json`.
 4. Nothing from third parties in the page, and no inline scripts or styles (the Content

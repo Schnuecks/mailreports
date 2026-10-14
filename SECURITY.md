@@ -18,7 +18,7 @@ Security fixes go into the latest release. Please update to it before reporting.
 
 ## Scope
 
-mailreports reads mails from a mailbox that anyone on the internet can write to. Report
+mailreports reads emails from a mailbox that anyone on the internet can write to. Report
 files are therefore treated as untrusted input:
 
 - XML is parsed with `defusedxml`; entity definitions and external references are refused.
@@ -26,7 +26,7 @@ files are therefore treated as untrusted input:
   gzip bombs are rejected.
 - All text from reports is escaped in the pages; the page uses a strict Content Security
   Policy without inline code and loads nothing from third parties.
-- Mails are only read and flagged or moved, never deleted.
+- Emails are only read and flagged or moved, never deleted.
 
 Access:
 

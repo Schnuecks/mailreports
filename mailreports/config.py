@@ -94,6 +94,7 @@ class Settings:
     logo_url: str = ""
     default_language: str = ""
     domains: list[str] = field(default_factory=list)
+    source_url: str = "https://github.com/Schnuecks/mailreports"
     timezone: str = "UTC"
     background_tasks: bool = True
 
@@ -143,6 +144,7 @@ def load() -> Settings:
         logo_url=env("LOGO_URL"),
         default_language=env("DEFAULT_LANGUAGE").lower(),
         domains=[d.lower() for d in env_list("DOMAINS")],
+        source_url=env("SOURCE_URL", "https://github.com/Schnuecks/mailreports"),
         timezone=env("TZ", "UTC") or "UTC",
         background_tasks=env_bool("BACKGROUND_TASKS", True),
     )

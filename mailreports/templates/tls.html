@@ -18,8 +18,8 @@
     <div class="dc-stats">
       <div class="big">{{ m.rate(t.ok / all * 100 if all else none) }}<span class="lbl">{{ _("Verbindungen erfolgreich") }}</span></div>
       <dl>
-        <div><dt>{{ _("erfolgreich") }}</dt><dd>{{ num(t.ok) }}</dd></div>
-        <div><dt>{{ _("fehlgeschlagen") }}</dt><dd {% if t.bad %}class="bad-text"{% endif %}>{{ num(t.bad) }}</dd></div>
+        <div><dt>{{ _("Erfolgreich") }}</dt><dd>{{ num(t.ok) }}</dd></div>
+        <div><dt>{{ _("Fehlgeschlagen") }}</dt><dd {% if t.bad %}class="bad-text"{% endif %}>{{ num(t.bad) }}</dd></div>
         <div><dt>{{ _("Berichte") }}</dt><dd>{{ num(t.reports) }}</dd></div>
       </dl>
     </div>
@@ -48,7 +48,7 @@
   <p class="muted">{{ ngettext("{n} Bericht", "{n} Berichte", total) }}</p>
   {% if rows %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th>{{ _("Richtlinie") }}</th><th class="num">{{ _("erfolgreich") }}</th><th class="num">{{ _("fehlgeschlagen") }}</th></tr></thead>
+    <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th>{{ _("Richtlinie") }}</th><th class="num">{{ _("Erfolgreich") }}</th><th class="num">{{ _("Fehlgeschlagen") }}</th></tr></thead>
     <tbody>
     {% for r in rows %}
       <tr>

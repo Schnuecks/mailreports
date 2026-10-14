@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/logo.svg" width="96" alt="mailreports"></p>
+<p align="center"><img src="mailreports/static/icon.svg" width="96" alt="mailreports"></p>
 
 # mailreports
 
@@ -9,64 +9,115 @@
   <a href="https://github.com/Schnuecks/mailreports/pkgs/container/mailreports"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker ready"></a>
   <img src="https://img.shields.io/badge/platform-amd64%20%7C%20arm64-E4572E" alt="Platform amd64 | arm64">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-4C9A2A" alt="License AGPL-3.0"></a>
+  <img src="https://img.shields.io/badge/status-beta-E4572E" alt="Status: beta">
+  <img src="https://img.shields.io/badge/maintained-yes-4C9A2A" alt="Maintained">
 </p>
 
-Sammelt **DMARC-Aggregate-Berichte** und **SMTP-TLS-Berichte** aus einem IMAP-Postfach und
-erklärt sie in Klartext: wer Mails im Namen deiner Domain verschickt hat, ob sie echt waren
-und was die empfangenden Server damit gemacht haben – statt XML und Fehlercodes.
+mailreports ist ein kleiner, selbstgehosteter Viewer für die Berichte, die Mailanbieter
+über deine Domains verschicken. Er holt **DMARC-Aggregate-Berichte** und
+**SMTP-TLS-Berichte** aus einem IMAP-Postfach und erklärt sie im Klartext: wer in deinem
+Namen Mails verschickt hat, ob sie echt waren und was die empfangenden Server damit gemacht
+haben – statt XML und Fehlercodes.
 
-> *„Diese 12 Mails kamen von deinem Newsletter-Dienst und waren korrekt mit example.org
-> signiert (DKIM-Selektor nl1). DMARC bestanden.“*
->
-> *„Unbekannter Absender 203.0.113.5 (China, AS4134) hat versucht, als example.org zu senden
-> (3 Mails): keine gültige DKIM-Signatur; SPF-Ergebnis: softfail. Der Empfänger hat sie in
-> Quarantäne bzw. in den Spam-Ordner verschoben.“*
+![Übersicht mit zwei Domains](docs/screenshots/overview-dark.png)
 
 ## Funktionen
 
+- **Übersicht** pro Domain mit DMARC-Bestehensquote, Verlauf pro Tag, veröffentlichter
+  Richtlinie und TLS-Ergebnissen, für 7, 30 oder 90 Tage oder ein Jahr
+- **Klartext-Erklärungen** für jeden Berichtseintrag, z. B. „Diese 118 Mails kamen von
+  Newsletter-Dienst: korrekt mit example.org signiert (DKIM-Selektor nl1).“, und für jeden
+  TLS-Fehlertyp, mit dem, was zu tun ist
+- **Einordnung der Absender:** eigener Server, beauftragte Dienste (zum Beispiel am
+  DKIM-Selektor), Weiterleitungen und Unbekannte, mit Reverse-DNS und optional Land und Netz
+  (AS) per GeoIP
+- **Berichtsdetails** mit jeder DKIM-Signatur und jedem Selektor, der SPF-Prüfung,
+  Header-From und Envelope-From
 - **IMAP-Abruf** über TLS; Berichte als `.xml`, `.json`, `.gz` oder `.zip`, egal mit welchem
-  MIME-Typ. Verarbeitete Mails werden markiert oder verschoben, nie gelöscht. Doppelte
-  Berichte werden erkannt.
-- **Übersicht pro Domain:** DMARC-Bestehensquote, Verlauf pro Tag, veröffentlichte
-  Richtlinie, TLS-Ergebnisse
-- **Klartext-Erklärungen** für jeden Berichtseintrag und jeden TLS-Fehlertyp
-- **Einordnung der Absender:** eigener Server, beauftragte Dienste (z. B. am DKIM-Selektor),
-  Weiterleitungen und Unbekannte, mit Reverse-DNS und optional GeoIP/ASN
-- **Push-Meldungen** über Pushover bei neuen Fehlschlägen und unbekannten Absendern, entprellt
-- **Anmeldung über den Reverse-Proxy** (Forward-Auth-Header wie `Remote-User`), keine eigenen Passwörter
+  MIME-Typ. Mails werden markiert oder verschoben, nie gelöscht, oder im Lesemodus gar nicht
+  angefasst. Doppelte Berichte werden erkannt.
+- **Push-Meldungen** über Pushover bei neuen Fehlschlägen, unbekannten Absendern und
+  TLS-Problemen, höchstens einmal am Tag pro Fund
+- **Anmeldung über deinen Reverse-Proxy** (Forward-Auth-Header wie `Remote-User`, z. B.
+  Authelia), keine eigenen Passwörter
 - **Geheimnisse aus Dateien** (`IMAP_PASSWORD_FILE`, `PUSHOVER_TOKEN_FILE`, …) für Docker-Secrets
-- **Hochladen** alter Berichtsdateien, **Hilfeseiten** zu SPF, DKIM, DMARC, Ausrichtung und TLS-RPT
-- Deutsch und Englisch, heller und dunkler Modus, auch fürs Handy
-- Kleiner Container: SQLite, ohne Root-Rechte, schreibgeschütztes Dateisystem, eingebauter Healthcheck
+- **Hochladen und Importieren** älterer Berichtsdateien, **Hilfeseiten** zu SPF, DKIM,
+  DMARC, Ausrichtung und TLS-Reporting
+- **Deutsch und Englisch**, helles und dunkles Design, auch fürs Handy
+- **Klein und einfach zu betreiben:** ein Container, eine SQLite-Datei, läuft ohne
+  Root-Rechte mit schreibgeschütztem Dateisystem und eingebautem Healthcheck
+
+| Ein Bericht im Klartext | Handy |
+|---|---|
+| ![Bericht mit Erklärungen](docs/screenshots/report.png) | ![Übersicht auf dem Handy im hellen Design](docs/screenshots/mobile-light.png) |
 
 ## Schnellstart
 
+Du brauchst Docker mit Docker Compose und ein Postfach, in dem die Berichte ankommen (die
+`rua=`-Adresse deines DMARC-Eintrags und die Adresse deines TLS-RPT-Eintrags).
+
 ```bash
 mkdir mailreports && cd mailreports
-curl -O https://raw.githubusercontent.com/Schnuecks/mailreports/main/compose.yaml
-curl -o .env https://raw.githubusercontent.com/Schnuecks/mailreports/main/.env.example
-curl -o sources.toml https://raw.githubusercontent.com/Schnuecks/mailreports/main/sources.example.toml
-mkdir secrets && printf '%s' 'dein-imap-passwort' > secrets/imap_password.txt
+curl -O https://raw.githubusercontent.com/schnuecks/mailreports/main/compose.yaml
+curl -o .env https://raw.githubusercontent.com/schnuecks/mailreports/main/.env.example
+curl -o sources.toml https://raw.githubusercontent.com/schnuecks/mailreports/main/sources.example.toml
+mkdir data secrets && sudo chown 10001 data
+printf '%s' 'dein-imap-passwort' > secrets/imap_password.txt
 docker compose up -d
 ```
 
-Danach http://localhost:8080 öffnen. Den `rua=`-Eintrag deines DMARC-Records und den
-TLS-RPT-Eintrag (`_smtp._tls`) auf das Postfach zeigen lassen; die ersten Berichte kommen
-innerhalb eines Tages.
+Vorher in `.env` `IMAP_HOST` und `IMAP_USER` eintragen und in `sources.toml` deinen eigenen
+Mailserver beschreiben. Dann `http://<server>:8080` öffnen; die ersten Berichte kommen
+innerhalb eines Tages. Aktualisieren: `docker compose pull && docker compose up -d`.
+
+Für den Zugriff über das Internet gehört es hinter einen Reverse-Proxy mit Anmeldung; siehe
+[Installation](docs/de/installation.md).
 
 ## Dokumentation
 
-- [Installation](docs/de/installation.md) – Docker, Reverse-Proxy und Anmeldung, GeoIP
-- [Einstellungen](docs/de/configuration.md) – alle Einstellungen und die Datei für bekannte Absender
-- [Bedienung](docs/de/usage.md) – was die Seiten zeigen und wie Absender eingeordnet werden
-- [Entwicklung](CONTRIBUTING.md)
+- [Installation](docs/de/installation.md): DNS-Einträge, Docker, Reverse-Proxy und
+  Anmeldung, GeoIP, alte Berichte importieren, Aktualisieren
+- [Einstellungen](docs/de/configuration.md): alle Einstellungen und die Datei mit bekannten Absendern
+- [Bedienung](docs/de/usage.md): was die Seiten zeigen, wie Absender eingeordnet werden, Kommandozeile
+- [Entwicklung](docs/de/development.md): lokal starten, Tests, Übersetzungen, Screenshots
+
+Was sich in welcher Version geändert hat, steht im [CHANGELOG](CHANGELOG.md).
+
+## Wie es entsteht
+
+mailreports entsteht mit Unterstützung eines KI-Assistenten. Funktionen und Verhalten lege ich
+fest, prüfe die Änderungen und teste sie an meinem eigenen Mailserver. Veröffentlicht wird nur,
+was die automatischen Prüfungen besteht: die Tests und ein Sicherheitsscan des Containers.
 
 ## Unterstützen
 
-Wenn dir mailreports hilft, kannst du mir gern einen Kaffee auf Ko-fi ausgeben:
+mailreports ist kostenlos und bleibt es. Wenn es dir Zeit spart, kannst du mir einen Kaffee
+ausgeben; das hält das Projekt am Laufen. Danke!
 
-<a href="https://ko-fi.com/schnuecks"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
+<p>
+  <a href="https://ko-fi.com/schnuecks"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
+</p>
+
+## Rückmeldungen
+
+Fehler und Ideen sind als [Issue auf GitHub](https://github.com/schnuecks/mailreports/issues)
+willkommen. Wird ein Bericht falsch gelesen oder erklärt, häng bitte die Datei an, mit
+ersetzten eigenen Domains und IP-Adressen. Siehe auch [CONTRIBUTING](CONTRIBUTING.md) und
+[SECURITY](SECURITY.md).
 
 ## Lizenz
 
-[GNU Affero General Public License v3.0 oder neuer](LICENSE)
+Copyright (C) 2026 Schnuecks
+
+mailreports ist freie Software unter der
+[GNU Affero General Public License, Version 3 oder später](LICENSE)
+(AGPL-3.0-or-later). Du darfst es nutzen, verändern und weitergeben.
+
+Gibst du eine veränderte Fassung weiter oder bietest sie anderen über ein Netzwerk zur
+Nutzung an, musst du ihnen den Quellcode deiner Fassung unter derselben Lizenz
+zugänglich machen. Der Link „Quellcode auf GitHub“ im Footer erfüllt das für diese
+Fassung; bei einer eigenen Fassung richte ihn mit `SOURCE_URL` auf deinen Quellcode.
+
+Das Programm wird ohne jede Gewährleistung bereitgestellt. Einzelheiten stehen in der
+[Lizenz](LICENSE). Die optionalen GeoIP-Daten stammen aus den GeoLite2-Datenbanken von
+MaxMind, die du selbst unter deren Lizenz herunterlädst; mailreports enthält sie nicht.

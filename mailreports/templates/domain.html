@@ -10,8 +10,8 @@
 <div class="grid stats">
   <div class="card stat"><span class="lbl">{{ _("DMARC bestanden") }}</span>{{ m.rate(s.rate) }}</div>
   <div class="card stat"><span class="lbl">{{ _("Mails") }}</span><strong>{{ num(s.messages) }}</strong></div>
-  <div class="card stat"><span class="lbl">{{ _("durchgefallen") }}</span><strong {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</strong>
-    {% if s.failed %}<small>{{ _("davon {q} Quarantäne, {r} abgewiesen", q=num(s.quarantined), r=num(s.rejected)) }}</small>{% endif %}</div>
+  <div class="card stat"><span class="lbl">{{ _("Durchgefallen") }}</span><strong {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</strong>
+    {% if s.failed %}<small>{{ _("davon {q} in Quarantäne, {r} abgewiesen", q=num(s.quarantined), r=num(s.rejected)) }}</small>{% endif %}</div>
   <div class="card stat"><span class="lbl">{{ _("Berichte von") }}</span><strong>{{ ngettext("{n} Empfänger", "{n} Empfängern", s.reporters) }}</strong></div>
 </div>
 
@@ -42,7 +42,7 @@
   <div class="card-head"><h2>{{ _("Absender") }}</h2><a href="/sources?days={{ days }}&domain={{ s.domain }}">{{ _("alle") }} →</a></div>
   {% if sources %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("bestanden") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
+    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("Bestanden") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
     <tbody>
     {% for row in sources %}
       <tr>

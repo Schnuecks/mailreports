@@ -13,13 +13,13 @@ All settings are environment variables. **Every variable can also be read from a
 | `IMAP_PASSWORD` | – | Password (better: `IMAP_PASSWORD_FILE`) |
 | `IMAP_PORT` | 993 (143 for starttls) | Port |
 | `IMAP_SECURITY` | `ssl` | `ssl` (implicit TLS) or `starttls`. Certificates are always verified. |
-| `IMAP_FOLDER` | `INBOX` | Folder with the report mails |
-| `IMAP_MOVE_TO` | – | Folder for processed mails (created if missing). Empty: mails stay and are flagged as seen with the keyword `$MailreportsDone`. |
-| `IMAP_ERROR_FOLDER` | – | Folder for mails without a usable report. Empty: keyword `$MailreportsError`. |
-| `IMAP_READONLY` | `false` | `true`: open the mailbox read-only and change nothing (no flags, no moving); processed mails are remembered in the database. For running next to another program that reads the same mailbox. |
+| `IMAP_FOLDER` | `INBOX` | Folder with the report emails |
+| `IMAP_MOVE_TO` | – | Folder for processed emails (created if missing). Empty: emails stay and are flagged as seen with the keyword `$MailreportsDone`. |
+| `IMAP_ERROR_FOLDER` | – | Folder for emails without a usable report. Empty: keyword `$MailreportsError`. |
+| `IMAP_READONLY` | `false` | `true`: open the mailbox read-only and change nothing (no flags, no moving); processed emails are remembered in the database. For running next to another program that reads the same mailbox. |
 | `FETCH_INTERVAL` | 900 | Seconds between two fetches (minimum 60) |
 
-Mails are never deleted. Mails with one of the two keywords are skipped on later fetches.
+Emails are never deleted. Emails with one of the two keywords are skipped on later fetches.
 A report that is already stored (same organisation and report ID) counts as a duplicate.
 
 ## Display
@@ -31,6 +31,7 @@ A report that is already stored (same organisation and report ID) counts as a du
 | `DEFAULT_LANGUAGE` | browser language | `de` or `en` |
 | `DOMAINS` | all | Comma-separated: which domains the overview shows, in this order |
 | `TZ` | `UTC` | Time zone for dates, e.g. `Europe/Berlin` |
+| `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link to the source code in the footer; empty hides it |
 
 ## Notifications
 
@@ -41,7 +42,7 @@ A report that is already stored (same organisation and report ID) counts as a du
 | `NOTIFY_COOLDOWN_HOURS` | 24 | The same finding is reported at most once in this time |
 | `BASE_URL` | – | Public address, added as a link to the message |
 
-A message is sent after a fetch when new reports contain mails that failed DMARC (except
+A message is sent after a fetch when new reports contain emails that failed DMARC (except
 recognised forwarding), senders that passed but are not in `sources.toml`, or TLS failures.
 A finding is identified by domain and IP (or domain and TLS failure type).
 
