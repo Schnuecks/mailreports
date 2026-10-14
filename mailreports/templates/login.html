@@ -6,9 +6,19 @@
   {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
   <form method="post" action="/login">
     <input type="hidden" name="next" value="{{ next }}">
+    <label for="username">{{ _("Benutzername") }}</label>
+    <input id="username" name="username" autocomplete="username webauthn" required autofocus>
     <label for="password">{{ _("Passwort") }}</label>
-    <input id="password" type="password" name="password" autocomplete="current-password" required autofocus>
+    <input id="password" type="password" name="password" autocomplete="current-password" required>
     <button class="btn">{{ _("Anmelden") }}</button>
   </form>
+  {% if passkey_login or sso_name %}<p class="or"><span>{{ _("oder") }}</span></p>{% endif %}
+  {% if passkey_login %}
+  <button type="button" class="btn ghost wide" data-passkey-login data-next="{{ next }}" hidden>{{ _("Mit Passkey anmelden") }}</button>
+  <p class="notice bad" data-passkey-error hidden
+     data-fallback="{{ _('Der Passkey konnte nicht geprüft werden. Bitte erneut versuchen.') }}"
+     data-cancelled="{{ _('Abgebrochen oder auf diesem Gerät nicht möglich.') }}"></p>
+  {% endif %}
+  {% if sso_name %}<a class="btn ghost wide" href="/login/oidc?next={{ next|urlencode }}">{{ _("Mit {name} anmelden", name=sso_name) }}</a>{% endif %}
 </section>
 {% endblock %}

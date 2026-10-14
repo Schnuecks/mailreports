@@ -54,12 +54,32 @@ Mailbox and last fetch (with a **Fetch now** button), upload of report files, th
 stored reports, which extras are active (GeoIP, reverse DNS, known sources, Pushover) and
 the emails processed last, with the reason when an email did not contain a usable report.
 
+## Accounts
+
+The account page (your name at the top right) offers:
+
+- **Two-factor sign-in** with an authenticator app: scan the QR code and confirm with a
+  code. Eight recovery codes are shown once; each replaces the second factor one time.
+- **Passkeys and security keys:** sign in without a password, or as second factor after a
+  password. Passkeys are bound to the address in `PUBLIC_URL`.
+- **Change password** (ends all other sessions) and **active sessions** with the option to
+  end them.
+
+Administrators manage accounts under **Users** (create, set a password, change the role,
+disable, reset the second factors, delete) and see the **sign-in log** with successful and
+refused sign-ins. The last active administrator cannot be removed.
+
 ## Command line
 
 ```bash
 python -m mailreports check            # settings and IMAP login
 python -m mailreports fetch            # fetch once
 python -m mailreports import FILES...  # import files or folders (.xml .json .gz .zip .eml)
+python -m mailreports create-user NAME [--admin]
+python -m mailreports set-password NAME
+python -m mailreports reset-2fa NAME   # removes authenticator app, passkeys, recovery codes
+python -m mailreports list-users
+python -m mailreports setup-code
 ```
 
 In Docker: `docker compose exec mailreports python -m mailreports check`.

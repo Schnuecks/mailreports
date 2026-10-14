@@ -83,7 +83,7 @@ def bar_chart(daily, fmt: Formatter, height: int = 120, label: str = "") -> Mark
         h_ok = ok / peak * (height - 4)
         h_bad = bad / peak * (height - 4)
         gap = 1.5 if ok and bad else 0
-        tip = i18n._("{day}: {ok} bestanden, {bad} durchgefallen",
+        tip = i18n._("{day}: {ok} bestanden, {bad} nicht bestanden",
                      day=fmt.day(d), ok=fmt_number(ok), bad=fmt_number(bad))
         parts = [f'<rect class="hit" x="{i * step}" y="0" width="{step}" height="{height}"/>']
         if ok:
@@ -92,7 +92,7 @@ def bar_chart(daily, fmt: Formatter, height: int = 120, label: str = "") -> Mark
             y = height - h_ok - gap - h_bad
             parts.append(f'<rect class="bad" x="{x}" y="{max(0, y):.2f}" width="{w}" height="{h_bad:.2f}"/>')
         bars.append(f'<g><title>{escape(tip)}</title>{"".join(parts)}</g>')
-    aria = escape(label or i18n._("Mails pro Tag"))
+    aria = escape(label or i18n._("E-Mails pro Tag"))
     return Markup(
         f'<svg class="bars" viewBox="0 0 {width} {height}" preserveAspectRatio="none" role="img" '
         f'aria-label="{aria}" width="100%" height="{height}">'
@@ -120,3 +120,75 @@ def setup(service) -> None:
     )
     service.tz = tz
     service.fmt = fmt
+
+
+# ---------------------------------------------------------------- request helpers
+
+PERIODS = (7, 30, 90, 365)
+COOKIE = "mailreports_session"
+
+
+def client_ip(request) -> str:
+    return request.client.host if request.client else ""
+
+
+def cookie_secure(request, settings) -> bool:
+    if settings.cookie_secure is not None:
+        return settings.cookie_secure
+    return request.url.scheme == "https" or settings.public_url.startswith("https://")
+
+
+def session_cookie(request, settings) -> str:
+    """Over HTTPS with the __Host- prefix: the browser then accepts the cookie only from
+    exactly this address, only over HTTPS and for all paths."""
+    return f"__Host-{COOKIE}" if cookie_secure(request, settings) else COOKIE
+
+
+def days_of(request) -> int:
+    try:
+        days = int(request.query_params.get("days", "30"))
+    except ValueError:
+        days = 30
+    return days if days in PERIODS else 30
+
+
+def page_of(request) -> int:
+    try:
+        return max(1, int(request.query_params.get("page", "1")))
+    except ValueError:
+        return 1
+
+
+def safe_next(value: str) -> str:
+    """Only local paths, so a link cannot redirect elsewhere after signing in."""
+    return value if value.startswith("/") and not value.startswith("//") and "\\" not in value else "/"
+
+
+def account(request):
+    return getattr(request.state, "account", None)
+
+
+def is_admin(request) -> bool:
+    return getattr(request.state, "is_admin", False)
+
+
+def check_csrf(request, token: str) -> bool:
+    """Form token of the session (built-in accounts); behind a proxy the same-origin check applies."""
+    acc = account(request)
+    if acc is None:
+        return not request.app.state.svc.settings.accounts_enabled
+    import secrets
+    return bool(token) and secrets.compare_digest(acc["s_csrf"], token)
+
+
+def render(request, name: str, status: int = 200, **ctx):
+    svc = request.app.state.svc
+    s = svc.settings
+    acc = account(request)
+    ctx.setdefault("days", days_of(request))
+    ctx.setdefault("error", "")
+    ctx.update(request=request, periods=PERIODS, nav=name.split(".")[0], fetch_running=svc.running,
+               user=getattr(request.state, "user", ""), account=acc, is_admin=is_admin(request),
+               csrf=acc["s_csrf"] if acc is not None else "", accounts_enabled=s.accounts_enabled,
+               sso_name=s.oidc_name if s.oidc_enabled else "")
+    return templates.TemplateResponse(request, name, ctx, status_code=status)

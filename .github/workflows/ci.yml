@@ -6,6 +6,7 @@ name: CI
 # and tests run there as a safety net.
 # For pull requests the image is only test-built (not uploaded). It is uploaded for a
 # version tag (v1.2.3); afterwards the last five releases are kept (KEEP_VERSIONS).
+# A test build (v1.2.3-rc.1) is uploaded under its own tag only, never as "latest".
 
 on:
   push:
@@ -38,7 +39,8 @@ jobs:
         if: github.ref_type == 'tag'
         run: |
           version=$(python -c "import mailreports; print(mailreports.__version__)")
-          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != __version__ $version"; exit 1; }
+          # a test build like v1.2.0-rc.1 belongs to version 1.2.0
+          test "v$version" = "${GITHUB_REF_NAME%%-*}" || { echo "tag $GITHUB_REF_NAME != __version__ $version"; exit 1; }
 
   image:
     needs: test
@@ -67,7 +69,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ steps.release.outputs.push }}
+            type=raw,value=latest,enable=${{ steps.release.outputs.push == 'true' && !contains(github.ref_name, '-') }}
       - uses: docker/build-push-action@v7
         with:
           context: .

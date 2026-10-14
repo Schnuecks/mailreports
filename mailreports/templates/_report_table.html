@@ -1,6 +1,6 @@
 {% if reports %}
 <div class="table-wrap"><table>
-  <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("Durchgefallen") }}</th></tr></thead>
+  <thead><tr><th>{{ _("Zeitraum") }}</th><th>{{ _("Domain") }}</th><th>{{ _("Berichtet von") }}</th><th class="num">{{ _("E-Mails") }}</th><th class="num">{{ _("Nicht bestanden") }}</th></tr></thead>
   <tbody>
   {% for r in reports %}
     <tr class="link-row">
@@ -13,4 +13,4 @@
   {% endfor %}
   </tbody>
 </table></div>
-{% else %}<p class="muted">{{ _("Keine Berichte gefunden.") }}</p>{% endif %}
+{% else %}<p class="muted">{{ _("Keine Berichte vorhanden.") }}</p>{% endif %}

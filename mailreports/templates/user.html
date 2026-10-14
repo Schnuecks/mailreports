@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ target.username }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ target.username }}</h1><a class="btn ghost" href="/users">← {{ _("alle Benutzer") }}</a></div>
+{% if message %}<div class="notice ok" role="status">{{ message }}</div>{% endif %}
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+<div class="grid two">
+<section class="card">
+  <h2>{{ _("Angaben") }}</h2>
+  <dl class="kv">
+    <dt>{{ _("Angelegt") }}</dt><dd>{{ fmt.datetime(target.created_at) }}</dd>
+    <dt>{{ _("Letzte Anmeldung") }}</dt><dd>{{ fmt.datetime(target.last_login_at) }}</dd>
+    <dt>{{ _("Authenticator-App") }}</dt><dd>{{ _("eingerichtet") if target.totp_enabled else _("nicht eingerichtet") }}</dd>
+    <dt>{{ _("Passkeys") }}</dt><dd>{{ keys|length }}</dd>
+    {% if target.oidc_sub %}<dt>{{ _("Single Sign-on") }}</dt><dd>{{ _("verknüpft") }}</dd>{% endif %}
+  </dl>
+  {% if target.totp_enabled or keys %}
+  <form method="post" action="/users/{{ target.id }}/2fa/reset"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">{{ _("Zwei-Faktor-Anmeldung zurücksetzen") }}</button></form>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>{{ _("Bearbeiten") }}</h2>
+  <form method="post" action="/users/{{ target.id }}" class="stack-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>{{ _("Name") }}<input name="display_name" value="{{ target.display_name }}"></label>
+    <label>{{ _("E-Mail") }}<input type="email" name="email" value="{{ target.email }}"></label>
+    <label>{{ _("Neues Passwort") }} <small class="muted">{{ _("(leer lassen, um es nicht zu ändern)") }}</small><input type="password" name="password" minlength="10" autocomplete="new-password"></label>
+    <label class="check"><input type="checkbox" name="is_admin" value="1" {% if target.is_admin %}checked{% endif %}> {{ _("Administration") }}</label>
+    <label class="check"><input type="checkbox" name="enabled" value="1" {% if target.enabled %}checked{% endif %}> {{ _("Konto aktiv") }}</label>
+    <button class="btn">{{ _("Speichern") }}</button>
+  </form>
+  <form method="post" action="/users/{{ target.id }}/delete" class="danger-zone">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn ghost danger">{{ _("Konto löschen") }}</button>
+  </form>
+</section>
+</div>
+{% endblock %}

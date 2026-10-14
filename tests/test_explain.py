@@ -36,7 +36,7 @@ def test_own_server_passes(tmp_path):
     e = explain_record(rec(), v, None, POLICY)
     assert e.level == "ok"
     assert e.title == "DMARC bestanden"
-    assert e.text == ("Diese 12 Mails kamen von Eigener Server: korrekt mit example.org signiert "
+    assert e.text == ("Diese 12 E-Mails stammen von Eigener Server: korrekt mit example.org signiert "
                       "(DKIM-Selektor 2026a), IP per SPF für example.org erlaubt.")
 
 
@@ -52,7 +52,7 @@ def test_forwarding_guess():
     r = rec(source_ip="198.51.100.77", spf_eval="fail")
     v = classify([], r, None)
     assert v.kind == "forwarder"
-    assert "weitergeleitet" in explain_record(r, v, info(ptr="mx.forward.test"), POLICY).text
+    assert "aufgrund der Weiterleitung" in explain_record(r, v, info(ptr="mx.forward.test"), POLICY).text
 
 
 def test_spoofer_in_plain_words():
@@ -64,7 +64,7 @@ def test_spoofer_in_plain_words():
                                   asn=4134, as_org="Chinanet"), POLICY)
     assert e.level == "warn"
     assert "China" in e.text and "AS4134 Chinanet" in e.text
-    assert "als example.org zu senden" in e.text
+    assert "im Namen von example.org gesendet" in e.text
     assert "Quarantäne" in e.text
 
 

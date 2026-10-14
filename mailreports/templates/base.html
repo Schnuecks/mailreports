@@ -7,6 +7,7 @@
 <link rel="icon" href="{{ logo_url or '/static/icon.svg' }}">
 <link rel="stylesheet" href="/static/style.css?v={{ version }}">
 <script src="/static/app.js?v={{ version }}" defer></script>
+<script src="/static/passkeys.js?v={{ version }}" defer></script>
 </head>
 <body>
 <header class="top">
@@ -14,7 +15,7 @@
     <img src="{{ logo_url or '/static/icon.svg' }}" alt="" width="34" height="34">
     <span>{{ app_title or "mailreports" }}</span>
   </a>
-  {% if not (password_login and not user) %}
+  {% if not (accounts_enabled and not account) %}
   <nav class="main-nav" aria-label="{{ _('Hauptmenü') }}">
     <a href="/?days={{ days }}" {% if nav == 'overview' or nav == 'domain' %}aria-current="page"{% endif %}>{{ _("Übersicht") }}</a>
     <a href="/reports?days={{ days }}" {% if nav in ('reports', 'report') %}aria-current="page"{% endif %}>{{ _("DMARC") }}</a>
@@ -22,10 +23,13 @@
     <a href="/sources?days={{ days }}" {% if nav == 'sources' %}aria-current="page"{% endif %}>{{ _("Absender") }}</a>
     <a href="/help" {% if nav == 'help' %}aria-current="page"{% endif %}>{{ _("Hilfe") }}</a>
     <a href="/status" {% if nav == 'status' %}aria-current="page"{% endif %}>{{ _("Status") }}</a>
+    {% if accounts_enabled and is_admin %}<a href="/users" {% if nav in ('users', 'user', 'sign_ins') %}aria-current="page"{% endif %}>{{ _("Benutzer") }}</a>{% endif %}
   </nav>
   {% endif %}
   <div class="top-right">
-    {% if password_login and user %}<form method="post" action="/logout"><button class="linklike">{{ _("Abmelden") }}</button></form>
+    {% if account %}
+    <a class="user" href="/account" title="{{ _('Konto') }}" {% if nav in ('account', 'totp_setup', 'recovery_codes') %}aria-current="page"{% endif %}>{{ user }}</a>
+    <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike">{{ _("Abmelden") }}</button></form>
     {% elif user %}<span class="user" title="{{ _('Angemeldet') }}">{{ user }}</span>{% endif %}
     <span class="langs">{% for code, name in languages.items() %}<a href="/lang/{{ code }}" title="{{ name }}" {% if code == current_language() %}aria-current="true"{% endif %}>{{ code|upper }}</a>{% endfor %}</span>
   </div>

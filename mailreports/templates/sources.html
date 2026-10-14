@@ -17,10 +17,10 @@
   <noscript><button class="btn">{{ _("Filtern") }}</button></noscript>
 </form>
 <section class="card">
-  <p class="muted">{{ _("Alle IP-Adressen, die laut den Berichten Mails mit deinen Domains verschickt haben. Bekannte Quellen kommen aus der Datei sources.toml.") }}</p>
+  <p class="muted">{{ _("Alle IP-Adressen, die laut den Berichten E-Mails im Namen der Domains versendet haben. Bekannte Quellen werden in der Datei sources.toml festgelegt.") }}</p>
   {% if rows %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("Bestanden") }}</th><th>{{ _("Ergebnis beim Empfänger") }}</th><th>{{ _("Absender-Domains") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
+    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("E-Mails") }}</th><th class="num">{{ _("Bestanden") }}</th><th>{{ _("Ergebnis beim Empfänger") }}</th><th>{{ _("Absender-Domains") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
     <tbody>
     {% for row in rows %}
       <tr>

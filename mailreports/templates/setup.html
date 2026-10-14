@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Einrichtung") }}{% endblock %}
+{% block content %}
+<section class="card login">
+  <h1>{{ _("Einrichtung") }}</h1>
+  <p class="muted">{{ _("Das erste Konto anlegen. Es erhält Administratorrechte. Der Einrichtungscode steht im Container-Log.") }}</p>
+  {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/setup">
+    <label for="code">{{ _("Einrichtungscode") }}</label>
+    <input id="code" name="code" autocomplete="off" required autofocus>
+    <label for="username">{{ _("Benutzername") }}</label>
+    <input id="username" name="username" value="{{ username }}" autocomplete="username" required>
+    <label for="password">{{ _("Passwort") }}</label>
+    <input id="password" type="password" name="password" autocomplete="new-password" minlength="10" required>
+    <label for="repeat">{{ _("Passwort wiederholen") }}</label>
+    <input id="repeat" type="password" name="repeat" autocomplete="new-password" minlength="10" required>
+    <button class="btn">{{ _("Konto anlegen") }}</button>
+  </form>
+</section>
+{% endblock %}

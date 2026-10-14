@@ -24,7 +24,6 @@ curl -O https://raw.githubusercontent.com/Schnuecks/mailreports/main/compose.yam
 curl -o .env https://raw.githubusercontent.com/Schnuecks/mailreports/main/.env.example
 curl -o sources.toml https://raw.githubusercontent.com/Schnuecks/mailreports/main/sources.example.toml
 mkdir secrets && printf '%s' 'your-imap-password' > secrets/imap_password.txt
-printf '%s' 'a-long-password-for-the-page' > secrets/admin_password.txt
 ```
 
 Fill in `IMAP_HOST` and `IMAP_USER` in `.env`, describe your own mail server in
@@ -43,9 +42,10 @@ user: `sudo chown 10001 data`.
 
 ## 3. Behind a reverse proxy with login
 
-Without a proxy, the page is protected by the password from `ADMIN_PASSWORD_FILE`. If you
-already have a reverse proxy with a login (forward auth), mailreports can use it instead
-and check the header the proxy sets:
+With built-in accounts, set `PUBLIC_URL` to the address in the browser (e.g.
+`https://dmarc.example.org`) so passkeys and single sign-on work and the session cookie is
+HTTPS-only. If you already have a reverse proxy with a login (forward auth), mailreports
+can use it instead of its own accounts and check the header the proxy sets:
 
 ```
 AUTH_HEADER=Remote-User        # requests without it are refused (401)

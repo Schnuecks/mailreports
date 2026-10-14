@@ -6,7 +6,7 @@
 {% if uploaded %}{% set u = uploaded.split("-") %}
 <div class="notice {{ 'bad' if u[3] != '0' else 'ok' }}">{{ _("Hochgeladen: {d} neue DMARC-Berichte, {t} neue TLS-Berichte, {dup} schon bekannt, {e} Fehler.", d=u[0], t=u[1], dup=u[2], e=u[3]) }}</div>
 {% endif %}
-{% if request.query_params.get("triggered") %}<div class="notice ok">{{ _("Abruf gestartet – lade die Seite gleich neu.") }}</div>{% endif %}
+{% if request.query_params.get("triggered") %}<div class="notice ok">{{ _("Der Abruf wurde gestartet. Die Seite in Kürze neu laden.") }}</div>{% endif %}
 
 <div class="grid two">
 <section class="card">
@@ -19,35 +19,38 @@
     <dt>{{ _("Intervall") }}</dt><dd>{{ _("alle {n} Minuten", n=settings.fetch_interval // 60) }}</dd>
     <dt>{{ _("Letzter Abruf") }}</dt><dd>{{ fmt.datetime(last_fetch) }}{% if fetch_running %} <span class="badge">{{ _("läuft gerade") }}</span>{% endif %}</dd>
     <dt>{{ _("Letzter Erfolg") }}</dt><dd>{{ fmt.datetime(last_ok) }}</dd>
-    <dt>{{ _("Ergebnis") }}</dt><dd>{{ _("{m} Mails, {d} neue DMARC-, {t} neue TLS-Berichte, {dup} doppelt, {e} Fehler", m=summary[0], d=summary[1], t=summary[2], dup=summary[3], e=summary[4]) }}</dd>
+    <dt>{{ _("Ergebnis") }}</dt><dd>{{ _("{m} E-Mails, {d} neue DMARC-, {t} neue TLS-Berichte, {dup} doppelt, {e} Fehler", m=summary[0], d=summary[1], t=summary[2], dup=summary[3], e=summary[4]) }}</dd>
   </dl>
   {% if fetch_error %}<div class="notice bad">{{ fetch_error }}</div>{% endif %}
-  <form method="post" action="/fetch"><button class="btn" {% if fetch_running %}disabled{% endif %}>{{ _("Jetzt abrufen") }}</button></form>
+  {% if is_admin %}<form method="post" action="/fetch"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn" {% if fetch_running %}disabled{% endif %}>{{ _("Jetzt abrufen") }}</button></form>{% endif %}
   {% else %}
   <p>{{ _("Kein IMAP-Postfach eingerichtet (IMAP_HOST, IMAP_USER, IMAP_PASSWORD bzw. IMAP_PASSWORD_FILE).") }}</p>
   {% endif %}
 </section>
 
+{% if is_admin %}
 <section class="card">
   <h2>{{ _("Berichte hochladen") }}</h2>
   <p class="muted">{{ _("XML-, JSON-, .gz- oder .zip-Dateien, z. B. aus einem alten Postfach. Doppelte Berichte werden erkannt.") }}</p>
   <form method="post" action="/upload" enctype="multipart/form-data" class="upload">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
     <input type="file" name="files" multiple required accept=".xml,.json,.gz,.zip">
     <button class="btn">{{ _("Hochladen") }}</button>
   </form>
 </section>
+{% endif %}
 
 <section class="card">
   <h2>{{ _("Daten") }}</h2>
   <dl class="kv">
     <dt>{{ _("DMARC-Berichte") }}</dt><dd>{{ num(counts.dmarc) }} ({{ _("{n} Einträge", n=num(counts.records)) }})</dd>
     <dt>{{ _("TLS-Berichte") }}</dt><dd>{{ num(counts.tls) }}</dd>
-    <dt>{{ _("Verarbeitete Mails") }}</dt><dd>{{ num(counts.mails) }}{% if counts.mail_errors %}, <span class="bad-text">{{ _("{n} ohne verwertbaren Bericht", n=num(counts.mail_errors)) }}</span>{% endif %}</dd>
+    <dt>{{ _("Verarbeitete E-Mails") }}</dt><dd>{{ num(counts.mails) }}{% if counts.mail_errors %}, <span class="bad-text">{{ _("{n} ohne verwertbaren Bericht", n=num(counts.mail_errors)) }}</span>{% endif %}</dd>
   </dl>
 </section>
 
 <section class="card">
-  <h2>{{ _("Zusatzdienste") }}</h2>
+  <h2>{{ _("Erweiterungen") }}</h2>
   <dl class="kv">
     <dt>GeoIP</dt><dd>{% if geo.available %}{{ _("aktiv") }}{% if not geo.asn %} – {{ _("ohne AS-Daten (GeoLite2-ASN.mmdb fehlt)") }}{% endif %}{% else %}{{ _("aus") }}{% endif %}</dd>
     <dt>{{ _("Reverse DNS") }}</dt><dd>{{ _("aktiv") if settings.dns_lookups else _("aus") }}</dd>
@@ -59,7 +62,7 @@
 </div>
 
 <section class="card">
-  <h2>{{ _("Zuletzt verarbeitete Mails") }}</h2>
+  <h2>{{ _("Zuletzt verarbeitete E-Mails") }}</h2>
   {% if mails %}
   <div class="table-wrap"><table>
     <thead><tr><th>{{ _("Zeit") }}</th><th>{{ _("Absender") }}</th><th>{{ _("Betreff") }}</th><th>{{ _("Ergebnis") }}</th></tr></thead>
@@ -74,6 +77,6 @@
     {% endfor %}
     </tbody>
   </table></div>
-  {% else %}<p class="muted">{{ _("Noch keine Mails verarbeitet.") }}</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Bisher wurden keine E-Mails verarbeitet.") }}</p>{% endif %}
 </section>
 {% endblock %}

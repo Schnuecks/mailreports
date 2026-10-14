@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Benutzer") }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Benutzer") }}</h1><a class="btn ghost" href="/sign-ins">{{ _("Anmeldeprotokoll") }}</a></div>
+{% if message %}<div class="notice ok" role="status">{{ message }}</div>{% endif %}
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+<section class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("Benutzername") }}</th><th>{{ _("Name") }}</th><th>{{ _("Rolle") }}</th><th>{{ _("Zwei-Faktor") }}</th><th>{{ _("Letzte Anmeldung") }}</th></tr></thead>
+    <tbody>{% for u in users %}
+      <tr><td><a href="/users/{{ u.id }}">{{ u.username }}</a>{% if not u.enabled %} <span class="badge">{{ _("deaktiviert") }}</span>{% endif %}</td>
+      <td>{{ u.display_name }}</td>
+      <td>{{ _("Administration") if u.is_admin else _("Lesezugriff") }}</td>
+      <td>{% if u.totp_enabled or u.passkey_count %}{{ _("aktiv") }}{% else %}<span class="muted">–</span>{% endif %}</td>
+      <td>{{ fmt.datetime(u.last_login_at) }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+<section class="card">
+  <h2>{{ _("Neues Konto") }}</h2>
+  <form method="post" action="/users/new" class="grid-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>{{ _("Benutzername") }}<input name="username" value="{{ form.username or '' }}" required autocomplete="off"></label>
+    <label>{{ _("Passwort") }}<input type="password" name="password" minlength="10" required autocomplete="new-password"></label>
+    <label>{{ _("Name") }}<input name="display_name" value="{{ form.display_name or '' }}"></label>
+    <label>{{ _("E-Mail") }}<input type="email" name="email" value="{{ form.email or '' }}"></label>
+    <label class="check"><input type="checkbox" name="is_admin" value="1" {% if form.is_admin %}checked{% endif %}> {{ _("Administration (Benutzer verwalten, Berichte hochladen, Abruf starten)") }}</label>
+    <div><button class="btn">{{ _("Konto anlegen") }}</button></div>
+  </form>
+</section>
+{% endblock %}

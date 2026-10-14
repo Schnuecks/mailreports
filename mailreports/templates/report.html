@@ -9,7 +9,7 @@
 
 <div class="grid stats">
   <div class="card stat"><span class="lbl">{{ _("Zeitraum") }}</span><strong class="small">{{ fmt.range(rep.date_begin, rep.date_end) }}</strong></div>
-  <div class="card stat"><span class="lbl">{{ _("Mails") }}</span><strong>{{ num(total) }}</strong></div>
+  <div class="card stat"><span class="lbl">{{ _("E-Mails") }}</span><strong>{{ num(total) }}</strong></div>
   <div class="card stat"><span class="lbl">{{ _("DMARC bestanden") }}</span>{{ m.rate(passed / total * 100 if total else none) }}</div>
   <div class="card stat"><span class="lbl">{{ _("Richtlinie laut Empfänger") }}</span><strong class="small"><code>p={{ rep.p or "?" }}</code>{% if rep.sp %} <code>sp={{ rep.sp }}</code>{% endif %} <code>adkim={{ rep.adkim or "r" }}</code> <code>aspf={{ rep.aspf or "r" }}</code>{% if rep.pct and rep.pct != '100' %} <code>pct={{ rep.pct }}</code>{% endif %}</strong></div>
 </div>
@@ -26,7 +26,7 @@
     <summary>
       {{ m.status_icon(item.ex.level) }}
       <code>{{ r.source_ip }}</code>
-      <span>{{ ngettext("{n} Mail", "{n} Mails", r.count) }}</span>
+      <span>{{ ngettext("{n} E-Mail", "{n} E-Mails", r.count) }}</span>
       {{ m.kind_badge(item.verdict.kind, item.verdict.source) }}
       <span class="badge disp-{{ r.disposition }}">{{ ex.disposition_label(r.disposition) }}</span>
     </summary>

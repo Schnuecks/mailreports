@@ -121,6 +121,91 @@ CREATE TABLE IF NOT EXISTS imap_seen (
     PRIMARY KEY (folder, uidvalidity, uid)
 );
 
+-- Accounts and sign-in
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    totp_secret TEXT NOT NULL DEFAULT '',
+    totp_enabled INTEGER NOT NULL DEFAULT 0,
+    totp_last_step INTEGER NOT NULL DEFAULT 0,
+    oidc_sub TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    last_login_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    csrf TEXT NOT NULL,
+    ip TEXT NOT NULL DEFAULT '',
+    client_info TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    last_used_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pending_logins (
+    id INTEGER PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    expires_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS recovery_codes (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    used_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS passkeys (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    credential_id TEXT NOT NULL UNIQUE,
+    public_key BLOB NOT NULL,
+    sign_count INTEGER NOT NULL DEFAULT 0,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_used_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_challenges (
+    id INTEGER PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    challenge BLOB NOT NULL,
+    purpose TEXT NOT NULL,
+    user_id INTEGER,
+    expires_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oidc_flows (
+    id INTEGER PRIMARY KEY,
+    state_hash TEXT NOT NULL UNIQUE,
+    nonce TEXT NOT NULL,
+    verifier TEXT NOT NULL,
+    next TEXT NOT NULL,
+    link_user_id INTEGER,
+    expires_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS login_events (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL,
+    user_id INTEGER,
+    ip TEXT NOT NULL,
+    success INTEGER NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS login_events_created ON login_events (created_at);
+
 CREATE TABLE IF NOT EXISTS notifications (
     key TEXT PRIMARY KEY,
     last_sent INTEGER NOT NULL
@@ -137,6 +222,9 @@ class Database:
         with self.connect() as con:
             con.executescript(SCHEMA)
             con.execute("INSERT OR IGNORE INTO meta VALUES ('schema', ?)", (str(SCHEMA_VERSION),))
+            # Columns added after a table first appeared (test build 0.2.0-rc.1)
+            if "link_user_id" not in {r[1] for r in con.execute("PRAGMA table_info(oidc_flows)")}:
+                con.execute("ALTER TABLE oidc_flows ADD COLUMN link_user_id INTEGER")
 
     @contextmanager
     def connect(self):

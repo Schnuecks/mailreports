@@ -86,9 +86,19 @@ class Settings:
     notify_cooldown_hours: int = 24
     base_url: str = ""
     # Access
-    admin_password: str = ""          # built-in sign-in: the password or an Argon2 hash
+    admin_username: str = "admin"     # first account created from ADMIN_PASSWORD
+    admin_password: str = ""          # password (or Argon2 hash) of that first account
     auth_disabled: bool = False       # no sign-in at all (local testing only)
-    cookie_secure: bool = False       # session cookie only over HTTPS
+    cookie_secure: bool | None = None  # session cookie only over HTTPS; None = automatic
+    public_url: str = ""              # address in the browser, for passkeys and single sign-on
+    secret_key: str = ""              # encrypts authenticator keys in the database
+    oidc_issuer: str = ""
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_name: str = "SSO"
+    oidc_admin_group: str = ""
+    oidc_allowed_group: str = ""
+    oidc_create_users: bool = False
     auth_header: str = ""             # e.g. Remote-User: requests without it are refused
     allowed_groups: list[str] = field(default_factory=list)
     trusted_proxies: list = field(default_factory=list)
@@ -108,6 +118,15 @@ class Settings:
     @property
     def imap_enabled(self) -> bool:
         return bool(self.imap_host and self.imap_user)
+
+    @property
+    def oidc_enabled(self) -> bool:
+        return bool(self.oidc_issuer and self.oidc_client_id)
+
+    @property
+    def accounts_enabled(self) -> bool:
+        """Built-in accounts (not behind a login proxy, sign-in not switched off)."""
+        return not self.auth_header and not self.auth_disabled
 
     @property
     def pushover_enabled(self) -> bool:
@@ -140,9 +159,19 @@ def load() -> Settings:
         pushover_user=env("PUSHOVER_USER"),
         notify_cooldown_hours=max(1, env_int("NOTIFY_COOLDOWN_HOURS", 24)),
         base_url=env("BASE_URL").rstrip("/"),
+        admin_username=env("ADMIN_USERNAME", "admin") or "admin",
         admin_password=env("ADMIN_PASSWORD"),
         auth_disabled=env_bool("AUTH_DISABLED", False),
-        cookie_secure=env_bool("COOKIE_SECURE", False),
+        cookie_secure=env_bool("COOKIE_SECURE", False) if env("COOKIE_SECURE") else None,
+        public_url=env("PUBLIC_URL").rstrip("/"),
+        secret_key=env("SECRET_KEY"),
+        oidc_issuer=env("OIDC_ISSUER").rstrip("/"),
+        oidc_client_id=env("OIDC_CLIENT_ID"),
+        oidc_client_secret=env("OIDC_CLIENT_SECRET"),
+        oidc_name=env("OIDC_NAME", "SSO") or "SSO",
+        oidc_admin_group=env("OIDC_ADMIN_GROUP"),
+        oidc_allowed_group=env("OIDC_ALLOWED_GROUP"),
+        oidc_create_users=env_bool("OIDC_CREATE_USERS", False),
         auth_header=env("AUTH_HEADER"),
         allowed_groups=env_list("ALLOWED_GROUPS"),
         trusted_proxies=_networks(env_list("TRUSTED_PROXIES")),

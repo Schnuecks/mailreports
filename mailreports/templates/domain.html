@@ -9,8 +9,8 @@
 
 <div class="grid stats">
   <div class="card stat"><span class="lbl">{{ _("DMARC bestanden") }}</span>{{ m.rate(s.rate) }}</div>
-  <div class="card stat"><span class="lbl">{{ _("Mails") }}</span><strong>{{ num(s.messages) }}</strong></div>
-  <div class="card stat"><span class="lbl">{{ _("Durchgefallen") }}</span><strong {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</strong>
+  <div class="card stat"><span class="lbl">{{ _("E-Mails") }}</span><strong>{{ num(s.messages) }}</strong></div>
+  <div class="card stat"><span class="lbl">{{ _("Nicht bestanden") }}</span><strong {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</strong>
     {% if s.failed %}<small>{{ _("davon {q} in Quarantäne, {r} abgewiesen", q=num(s.quarantined), r=num(s.rejected)) }}</small>{% endif %}</div>
   <div class="card stat"><span class="lbl">{{ _("Berichte von") }}</span><strong>{{ ngettext("{n} Empfänger", "{n} Empfängern", s.reporters) }}</strong></div>
 </div>
@@ -24,17 +24,17 @@
     {% if s.pct and s.pct != '100' %} <code>pct={{ s.pct }}</code>{% endif %}
   </p>
   <p class="muted">
-    {% if s.policy == 'reject' %}{{ _("Mails, die DMARC verfehlen, sollen abgewiesen werden – der stärkste Schutz.") }}
-    {% elif s.policy == 'quarantine' %}{{ _("Mails, die DMARC verfehlen, sollen im Spam-Ordner landen.") }}
-    {% else %}{{ _("Nur beobachten: Fehlschläge werden gemeldet, aber nicht blockiert.") }}{% endif %}
-    {% if s.adkim == 's' and s.aspf == 's' %}{{ _("Strenge Ausrichtung: Die Domains müssen exakt übereinstimmen, Subdomains zählen nicht.") }}{% endif %}
+    {% if s.policy == 'reject' %}{{ _("E-Mails, die DMARC nicht bestehen, werden abgewiesen. Dies ist die strengste Richtlinie.") }}
+    {% elif s.policy == 'quarantine' %}{{ _("E-Mails, die DMARC nicht bestehen, werden in Quarantäne (Spam-Ordner) verschoben.") }}
+    {% else %}{{ _("Nur Überwachung: E-Mails, die DMARC nicht bestehen, werden gemeldet, aber nicht blockiert.") }}{% endif %}
+    {% if s.adkim == 's' and s.aspf == 's' %}{{ _("Strenge Ausrichtung: Die Domains müssen exakt übereinstimmen; Subdomains genügen nicht.") }}{% endif %}
   </p>
 </section>
 {% endif %}
 
 <section class="card">
   <div class="card-head"><h2>{{ _("Verlauf") }}</h2>{{ m.legend() }}</div>
-  {{ bar_chart(s.daily, fmt, 160, _("Mails pro Tag für {d}", d=s.domain)) }}
+  {{ bar_chart(s.daily, fmt, 160, _("E-Mails pro Tag für {d}", d=s.domain)) }}
   {% if s.daily %}<div class="axis"><span>{{ fmt.day(s.daily[0][0]) }}</span><span>{{ fmt.day(s.daily[(s.daily|length) // 2][0]) }}</span><span>{{ fmt.day(s.daily[-1][0]) }}</span></div>{% endif %}
 </section>
 
@@ -42,7 +42,7 @@
   <div class="card-head"><h2>{{ _("Absender") }}</h2><a href="/sources?days={{ days }}&domain={{ s.domain }}">{{ _("alle") }} →</a></div>
   {% if sources %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("Mails") }}</th><th class="num">{{ _("Bestanden") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
+    <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("E-Mails") }}</th><th class="num">{{ _("Bestanden") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
     <tbody>
     {% for row in sources %}
       <tr>

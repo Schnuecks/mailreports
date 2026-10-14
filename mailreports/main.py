@@ -7,6 +7,7 @@ import ipaddress
 import logging
 import math
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -15,7 +16,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, auth, i18n, queries, web
+from . import __version__, accounts, i18n, queries, routes_auth, web
 from .explain import explain_record
 from .ingest import Outcome, ingest_payload
 from .parsing import Payload
@@ -26,8 +27,26 @@ logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper(),
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("mailreports")
 
-PERIODS = (7, 30, 90, 365)
+_SECRET_PARAMS = re.compile(r"([?&](?:code|state|token)=)[^&\s]*")
+
+
+class _MaskSecrets(logging.Filter):
+    """Keeps authorization codes and state values of single sign-on out of the access log."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(_SECRET_PARAMS.sub(lambda m: m.group(1) + "***", a) if isinstance(a, str) else a
+                                for a in record.args)
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(_MaskSecrets())
+
 MAX_UPLOAD = 20 * 1024 * 1024
+# Reachable without a session (built-in accounts)
+PUBLIC_PATHS = ("/static/", "/login", "/setup", "/oidc/callback", "/lang/")
+# Only for admins
+ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload")
 
 
 def create_app(service: Service | None = None) -> FastAPI:
@@ -50,25 +69,21 @@ def create_app(service: Service | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def guard(request: Request, call_next):
-        if request.url.path == "/healthz":
+        path = request.url.path
+        if path == "/healthz":
             return await call_next(request)
-        client = request.client.host if request.client else ""
         if settings.trusted_proxies:
             try:
-                addr = ipaddress.ip_address(client)
+                addr = ipaddress.ip_address(web.client_ip(request))
             except ValueError:
                 addr = None
             if addr is None or not any(addr in net for net in settings.trusted_proxies):
                 return PlainTextResponse("Forbidden", status_code=403)
-        request.state.user = ""
-        path = request.url.path
-        if svc.sessions and path not in ("/login", "/healthz") and not path.startswith("/static/"):
-            if not svc.sessions.valid(request.cookies.get(auth.COOKIE)):
-                if request.method == "GET":
-                    target = path + (f"?{request.url.query}" if request.url.query else "")
-                    return RedirectResponse(f"/login?next={quote(target)}", status_code=303)
-                return PlainTextResponse("Unauthorized", status_code=401)
-            request.state.user = "admin"
+        i18n.set_language(i18n.pick_language(request.cookies.get("lang"), settings.default_language,
+                                             request.headers.get("accept-language")))
+        request.state.user, request.state.account, request.state.is_admin = "", None, False
+        if request.method == "POST" and not same_origin(request):
+            return PlainTextResponse("Forbidden: cross-site request", status_code=403)
         if settings.auth_header:
             user = request.headers.get(settings.auth_header, "").strip()
             if not user:
@@ -78,18 +93,36 @@ def create_app(service: Service | None = None) -> FastAPI:
                 if not groups & set(settings.allowed_groups):
                     return PlainTextResponse("Forbidden: not in an allowed group", status_code=403)
             request.state.user = request.headers.get("Remote-Name", "").strip() or user
-        if request.method == "POST" and not same_origin(request):
-            return PlainTextResponse("Forbidden: cross-site request", status_code=403)
-        i18n.set_language(i18n.pick_language(request.cookies.get("lang"), settings.default_language,
-                                             request.headers.get("accept-language")))
+            request.state.is_admin = True
+        elif settings.auth_disabled:
+            request.state.is_admin = True
+        else:
+            with svc.db.connect() as con:
+                acc = accounts.resolve_session(con, request.cookies.get(web.session_cookie(request, settings), ""))
+                no_users = acc is None and not accounts.has_users(con)
+            if acc is not None:
+                request.state.account = acc
+                request.state.user = acc["display_name"] or acc["username"]
+                request.state.is_admin = bool(acc["is_admin"])
+            elif not path.startswith(PUBLIC_PATHS):
+                if no_users:
+                    return RedirectResponse("/setup", status_code=303)
+                if request.method == "GET":
+                    target = path + (f"?{request.url.query}" if request.url.query else "")
+                    return RedirectResponse(f"/login?next={quote(target)}", status_code=303)
+                return PlainTextResponse("Unauthorized", status_code=401)
+        if path.startswith(ADMIN_PATHS) and not request.state.is_admin:
+            return web.render(request, "error.html", status=403,
+                              message=i18n._("Für diese Seite fehlt die Berechtigung."))
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "same-origin")
         response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Cache-Control", "no-store")
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' https: data:; style-src 'self'; script-src 'self'; "
-            "frame-ancestors 'none'")
+            "frame-ancestors 'none'; form-action 'self' https:")
         return response
 
     def same_origin(request: Request) -> bool:
@@ -100,25 +133,7 @@ def create_app(service: Service | None = None) -> FastAPI:
         origin = request.headers.get("origin")
         return not origin or urlsplit(origin).netloc == request.headers.get("host")
 
-    def days_of(request: Request) -> int:
-        try:
-            days = int(request.query_params.get("days", "30"))
-        except ValueError:
-            days = 30
-        return days if days in PERIODS else 30
-
-    def page_of(request: Request) -> int:
-        try:
-            return max(1, int(request.query_params.get("page", "1")))
-        except ValueError:
-            return 1
-
-    def render(request: Request, name: str, **ctx):
-        ctx.setdefault("days", days_of(request))
-        ctx.update(request=request, periods=PERIODS, user=getattr(request.state, "user", ""),
-                   password_login=bool(svc.sessions),
-                   nav=name.split(".")[0], fetch_running=svc.running)
-        return web.templates.TemplateResponse(request, name, ctx)
+    days_of, page_of, render = web.days_of, web.page_of, web.render
 
     def explained(records, report_rows: dict):
         """Records with classification and plain-language explanation."""
@@ -233,13 +248,17 @@ def create_app(service: Service | None = None) -> FastAPI:
                       geo=svc.geo, sources=svc.sources, uploaded=request.query_params.get("uploaded"))
 
     @app.post("/fetch")
-    def fetch_now():
+    def fetch_now(request: Request, csrf: str = Form("")):
+        if not web.check_csrf(request, csrf):
+            raise HTTPException(403)
         if settings.imap_enabled:
             svc.trigger()
         return RedirectResponse("/status?triggered=1", status_code=303)
 
     @app.post("/upload")
-    async def upload(files: list[UploadFile] = File(...)):
+    async def upload(request: Request, files: list[UploadFile] = File(...), csrf: str = Form("")):
+        if not web.check_csrf(request, csrf):
+            raise HTTPException(403)
         total = Outcome()
         for f in files[:50]:
             data = await f.read(MAX_UPLOAD + 1)
@@ -251,45 +270,6 @@ def create_app(service: Service | None = None) -> FastAPI:
         return RedirectResponse(
             f"/status?uploaded={len(total.new_dmarc)}-{len(total.new_tls)}-{total.duplicates}-{len(total.errors)}",
             status_code=303)
-
-    def safe_next(value: str) -> str:
-        """Only local paths, so the login cannot be used to redirect elsewhere."""
-        return value if value.startswith("/") and not value.startswith("//") and "\\" not in value else "/"
-
-    @app.get("/login")
-    def login_page(request: Request):
-        if not svc.sessions:
-            return RedirectResponse("/", status_code=303)
-        return render(request, "login.html", next=safe_next(request.query_params.get("next", "/")), error="")
-
-    @app.post("/login")
-    def login(request: Request, password: str = Form(""), next: str = Form("/")):
-        if not svc.sessions:
-            return RedirectResponse("/", status_code=303)
-        client = request.client.host if request.client else ""
-        target = safe_next(next)
-        if svc.sessions.blocked(client):
-            resp = render(request, "login.html", next=target,
-                          error=i18n._("Zu viele Fehlversuche. Bitte in einer Viertelstunde erneut versuchen."))
-            resp.status_code = 429
-            return resp
-        if not auth.check_password(settings.admin_password, password):
-            svc.sessions.failed(client)
-            log.warning("failed sign-in from %s", client)
-            resp = render(request, "login.html", next=target, error=i18n._("Das Passwort stimmt nicht."))
-            resp.status_code = 401
-            return resp
-        svc.sessions.succeeded(client)
-        resp = RedirectResponse(target, status_code=303)
-        resp.set_cookie(auth.COOKIE, svc.sessions.create(), max_age=auth.SESSION_DAYS * 86400, httponly=True,
-                        samesite="lax", secure=settings.cookie_secure or request.url.scheme == "https")
-        return resp
-
-    @app.post("/logout")
-    def logout():
-        resp = RedirectResponse("/login" if svc.sessions else "/", status_code=303)
-        resp.delete_cookie(auth.COOKIE)
-        return resp
 
     @app.get("/lang/{code}")
     def set_lang(request: Request, code: str):
@@ -303,8 +283,12 @@ def create_app(service: Service | None = None) -> FastAPI:
 
     @app.exception_handler(404)
     async def not_found(request: Request, exc):
-        resp = render(request, "error.html", message=i18n._("Diese Seite gibt es nicht."))
-        resp.status_code = 404
-        return resp
+        return render(request, "error.html", status=404, message=i18n._("Die angeforderte Seite wurde nicht gefunden."))
+
+    @app.exception_handler(403)
+    async def forbidden(request: Request, exc):
+        return render(request, "error.html", status=403, message=i18n._("Diese Aktion ist nicht erlaubt."))
+
+    app.include_router(routes_auth.router)
 
     return app

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Wiederherstellungscodes") }}{% endblock %}
+{% block content %}
+<section class="card login">
+  <h1>{{ _("Wiederherstellungscodes") }}</h1>
+  <p>{{ _("Diese Codes sicher aufbewahren, zum Beispiel in einem Passwort-Manager. Jeder Code ersetzt einmalig den zweiten Faktor, falls Authenticator-App oder Passkey nicht verfügbar sind. Die Codes werden nur jetzt angezeigt.") }}</p>
+  <ul class="codes">{% for c in codes %}<li><code>{{ c }}</code></li>{% endfor %}</ul>
+  <a class="btn" href="/account">{{ _("Gespeichert, weiter") }}</a>
+</section>
+{% endblock %}

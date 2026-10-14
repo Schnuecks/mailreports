@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import threading
 
-from . import auth, config, enrich, fetch, notify
+from . import accounts, config, enrich, fetch, notify, secretbox
 from .db import Database
 from .ingest import Outcome
 from .sources import load_sources
@@ -22,15 +22,14 @@ class Service:
             # Without it anyone who reaches the port could send the header and sign in as anybody
             raise SystemExit("AUTH_HEADER needs TRUSTED_PROXIES: set it to the address of your reverse proxy "
                              "(for a proxy with network_mode: host, the gateway of the proxy network).")
-        if not (s.auth_header or s.admin_password or s.auth_disabled):
-            raise SystemExit("No sign-in configured: set ADMIN_PASSWORD (or ADMIN_PASSWORD_FILE), or AUTH_HEADER "
-                             "and TRUSTED_PROXIES behind a login proxy.")
-        if s.auth_disabled and not s.auth_header and not s.admin_password:
+        if s.auth_disabled and not s.auth_header:
             log.warning("AUTH_DISABLED is set: everybody who reaches the port can see all reports.")
-        self.sessions = None
-        if s.admin_password and not s.auth_header:
-            self.sessions = auth.Sessions(auth.load_key(s.data_dir), s.admin_password)
+        if s.oidc_issuer and not s.oidc_issuer.startswith("https://"):
+            raise SystemExit("OIDC_ISSUER must be an https:// address.")
+        self.limiter = accounts.LoginLimiter()
         self.db = Database(self.settings.db_path)
+        if s.accounts_enabled:
+            self._prepare_accounts()
         self.sources = load_sources(self.settings.sources_file)
         self.geo = enrich.GeoIP(self.settings)
         for net in self.settings.trusted_proxies:
@@ -41,6 +40,23 @@ class Service:
         self._wake = threading.Event()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+
+    def _prepare_accounts(self) -> None:
+        s = self.settings
+        with self.db.connect() as con:
+            secretbox.migrate(con, s.secret_key)
+            if accounts.has_users(con):
+                return
+            if s.admin_password:
+                # First account from the configuration (also the upgrade path from 0.1.x)
+                if s.admin_password.startswith("$argon2"):
+                    accounts.create_user(con, s.admin_username, "", is_admin=True, password_hash=s.admin_password)
+                else:
+                    accounts.create_user(con, s.admin_username, s.admin_password, is_admin=True)
+                log.warning("Account %s created from ADMIN_PASSWORD.", s.admin_username)
+                return
+            code = accounts.setup_code(con)
+        log.warning("No account yet. Open the page and create the first one with the setup code %s", code)
 
     # ------------------------------------------------------------ one run
 

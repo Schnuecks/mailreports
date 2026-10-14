@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Zweiter Faktor") }}{% endblock %}
+{% block content %}
+<section class="card login">
+  <h1>{{ _("Zweiter Faktor") }}</h1>
+  {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+  {% if keys %}
+  <p class="muted">{{ _("Anmeldung mit Passkey oder Sicherheitsschlüssel bestätigen.") }}</p>
+  <button type="button" class="btn wide" data-passkey-second data-pending="{{ pending }}" data-next="{{ next }}" hidden>{{ _("Mit Passkey bestätigen") }}</button>
+  <p class="notice bad" data-passkey-error hidden
+     data-fallback="{{ _('Der Passkey konnte nicht geprüft werden. Bitte erneut versuchen.') }}"
+     data-cancelled="{{ _('Abgebrochen oder auf diesem Gerät nicht möglich.') }}"></p>
+  <p class="or"><span>{{ _("oder") }}</span></p>
+  {% endif %}
+  <form method="post" action="/login/code">
+    <input type="hidden" name="pending" value="{{ pending }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="code">{% if totp %}{{ _("Code aus der Authenticator-App oder Wiederherstellungscode") }}{% else %}{{ _("Wiederherstellungscode") }}{% endif %}</label>
+    <input id="code" name="code" autocomplete="one-time-code" inputmode="{{ 'numeric' if totp else 'text' }}" required {% if not keys %}autofocus{% endif %}>
+    <button class="btn">{{ _("Bestätigen") }}</button>
+  </form>
+</section>
+{% endblock %}
