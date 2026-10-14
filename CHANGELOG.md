@@ -2,7 +2,7 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.4.1
 
 - **Neutral design by default** (grey and blue, light and dark); the olive green design is still
   available with `THEME=olive`. Installations that want to keep the previous look set `THEME=olive`.
