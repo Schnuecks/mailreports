@@ -24,7 +24,6 @@ curl -O https://raw.githubusercontent.com/Schnuecks/mailreports/main/compose.yam
 curl -o .env https://raw.githubusercontent.com/Schnuecks/mailreports/main/.env.example
 curl -o sources.toml https://raw.githubusercontent.com/Schnuecks/mailreports/main/sources.example.toml
 mkdir secrets && printf '%s' 'dein-imap-passwort' > secrets/imap_password.txt
-printf '%s' 'ein-langes-passwort-fuer-die-seite' > secrets/admin_password.txt
 ```
 
 In `.env` `IMAP_HOST` und `IMAP_USER` eintragen, in `sources.toml` den eigenen Mailserver
@@ -43,9 +42,11 @@ für ihn beschreibbar sein: `sudo chown 10001 data`.
 
 ## 3. Hinter einem Reverse-Proxy mit Anmeldung
 
-Ohne Proxy schützt das Passwort aus `ADMIN_PASSWORD_FILE` die Seite. Hast du schon einen
-Reverse-Proxy mit Anmeldung (Forward-Auth), kann mailreports stattdessen ihn nutzen und den
-Header prüfen, den der Proxy setzt:
+Mit eingebauten Konten `PUBLIC_URL` auf die Adresse im Browser setzen (z. B.
+`https://dmarc.example.org`), damit Passkeys und Single Sign-on funktionieren und das
+Sitzungs-Cookie nur über HTTPS gilt. Ist bereits ein Reverse-Proxy mit Anmeldung (Forward-Auth)
+vorhanden, kann mailreports ihn statt der eigenen Konten nutzen und den Header prüfen, den der
+Proxy setzt:
 
 ```
 AUTH_HEADER=Remote-User        # Anfragen ohne diesen Header werden abgewiesen (401)

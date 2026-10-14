@@ -7,7 +7,7 @@
   <h1>{{ _("TLS-Berichte") }}</h1>
   {{ m.periods_switch(days, periods, "&" ~ q) }}
 </div>
-<p class="lead muted">{{ _("Andere Mailserver melden hier, ob sie deine Server verschlüsselt erreichen konnten (SMTP TLS Reporting, RFC 8460).") }}</p>
+<p class="lead muted">{{ _("Empfangende Mailserver melden, ob verschlüsselte Verbindungen zu den eigenen Mailservern möglich waren (SMTP TLS Reporting, RFC 8460).") }}</p>
 
 {% if overview %}
 <div class="grid domains">
@@ -62,7 +62,7 @@
     {% endfor %}
     </tbody>
   </table></div>
-  {% else %}<p class="muted">{{ _("Keine Berichte gefunden.") }}</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Keine Berichte vorhanden.") }}</p>{% endif %}
   {{ m.pager(page, pages, "days=" ~ days ~ "&" ~ q) }}
 </section>
 {% endblock %}

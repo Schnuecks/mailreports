@@ -48,16 +48,53 @@ verfehlt haben (außer erkannten Weiterleitungen), Absender, die bestanden haben
 in `sources.toml` stehen, oder TLS-Fehler. Ein Fund ist durch Domain und IP bestimmt (bzw.
 Domain und TLS-Fehlertyp).
 
-## Zugriff
+## Anmeldung und Konten
 
-Ohne Anmeldung startet mailreports nicht: entweder ein Passwort (eingebaute Anmeldung) oder
-ein Anmelde-Proxy (`AUTH_HEADER`). Ist `AUTH_HEADER` gesetzt, wird das Passwort nicht genutzt.
+mailreports verlangt immer eine Anmeldung. Dafür gibt es zwei Wege:
+
+- **Eingebaute Konten** (Standard): Benutzerkonten mit Passwort, optional Zwei-Faktor-Anmeldung
+  mit Authenticator-App, Passkeys und Sicherheitsschlüssel, Single Sign-on über einen
+  OpenID-Connect-Anbieter und ein Anmeldeprotokoll. Beim ersten Start ohne Konto fragt die
+  Seite nach einem Einrichtungscode aus dem Container-Log und legt das erste
+  Administratorkonto an.
+- **Anmelde-Proxy** (`AUTH_HEADER`): Ein Reverse-Proxy mit Forward-Auth meldet an; die App
+  vertraut seinem Header. Kontoseiten gibt es in diesem Modus nicht.
+
+Konten haben eine von zwei Rollen: **Administration** (Benutzer verwalten, Berichte hochladen,
+Abruf starten) oder **Lesezugriff**.
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
-| `ADMIN_PASSWORD` | – | Passwort für die Anmeldeseite (besser: `ADMIN_PASSWORD_FILE`). Entweder das Passwort selbst oder ein Argon2-Hash aus `python -m mailreports hash-password`. Fünf Fehlversuche pro Adresse sperren für 15 Minuten; eine Sitzung hält 30 Tage, ein neues Passwort meldet alle ab. |
-| `COOKIE_SECURE` | `false` | `true`: Sitzungs-Cookie nur über HTTPS senden. Setzen, wenn ein HTTPS-Proxy davor steht. |
+| `PUBLIC_URL` | – | Adresse im Browser, z. B. `https://dmarc.example.org`. Hinter einem Reverse-Proxy nötig für Passkeys und Single Sign-on; das Sitzungs-Cookie gilt dann nur über HTTPS. |
+| `ADMIN_USERNAME` | `admin` | Name des ersten Kontos, das aus `ADMIN_PASSWORD` angelegt wird |
+| `ADMIN_PASSWORD` | – | Legt beim Start das erste Administratorkonto an, falls es noch keines gibt, statt des Einrichtungscodes (besser: `ADMIN_PASSWORD_FILE`). Das Passwort selbst oder ein Argon2-Hash aus `python -m mailreports hash-password`. Wird ignoriert, sobald Konten existieren. |
+| `SECRET_KEY` | – | Verschlüsselt die Schlüssel der Authenticator-Apps in der Datenbank (beliebiger langer Zufallstext, besser: `SECRET_KEY_FILE`). Aufbewahren: Ohne ihn funktionieren die Codes bestehender Zwei-Faktor-Anmeldungen nicht mehr. |
+| `COOKIE_SECURE` | automatisch | `true`/`false` legt fest, ob das Sitzungs-Cookie nur über HTTPS gesendet wird |
 | `AUTH_DISABLED` | `false` | `true`: gar keine Anmeldung. Nur für lokale Tests – jeder, der den Port erreicht, sieht alles. |
+
+Fünf fehlgeschlagene Anmeldungen pro Benutzername (zehn pro Adresse) sperren für 15 Minuten.
+Eine Sitzung gilt 30 Tage und verlängert sich bei Nutzung; eine Passwortänderung beendet alle
+Sitzungen des Kontos.
+
+### Single Sign-on (OpenID Connect)
+
+| Variable | Standard | Bedeutung |
+|---|---|---|
+| `OIDC_ISSUER` | – | Adresse des Anbieters, z. B. `https://auth.example.org` (nur HTTPS) |
+| `OIDC_CLIENT_ID` | – | Beim Anbieter registrierte Client-ID |
+| `OIDC_CLIENT_SECRET` | – | Client-Secret (besser: `OIDC_CLIENT_SECRET_FILE`) |
+| `OIDC_NAME` | `SSO` | Beschriftung der Schaltfläche „Mit … anmelden“ |
+| `OIDC_ADMIN_GROUP` | – | Mitglieder dieser Gruppe erhalten Administrationsrechte |
+| `OIDC_ALLOWED_GROUP` | – | Nur Mitglieder dieser Gruppe (oder der Admin-Gruppe) dürfen sich anmelden |
+| `OIDC_CREATE_USERS` | `false` | Beim ersten Anmelden ein Konto anlegen; sonst können sich nur bestehende Konten anmelden (zugeordnet über Benutzername oder bestätigte E-Mail-Adresse) |
+
+Beim Anbieter `PUBLIC_URL/oidc/callback` als Redirect-URI eintragen, mit den Scopes
+`openid profile email groups`.
+
+### Anmelde-Proxy
+
+| Variable | Standard | Bedeutung |
+|---|---|---|
 | `AUTH_HEADER` | – | Header mit dem Benutzernamen vom Anmelde-Proxy, z. B. `Remote-User`. Wenn gesetzt, bekommen Anfragen ohne ihn 401. Braucht `TRUSTED_PROXIES`, sonst startet mailreports nicht. |
 | `ALLOWED_GROUPS` | – | Kommagetrennt; mindestens eine muss in `Remote-Groups` stehen |
 | `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403. Am besten nur die Adresse des Proxys, nicht das ganze Netz (siehe [Installation](installation.md#3-hinter-einem-reverse-proxy-mit-anmeldung)). |

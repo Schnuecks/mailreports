@@ -15,10 +15,10 @@
 <section class="card empty">
   <h2>{{ _("Noch keine Berichte") }}</h2>
   {% if imap %}
-  <p>{{ _("Das Postfach wird regelmäßig abgerufen. Berichte kommen meist einmal am Tag – nach dem ersten Tag mit DMARC-Eintrag dauert es bis zu 24 Stunden.") }}</p>
+  <p>{{ _("Das Postfach wird regelmäßig abgerufen. Berichte werden in der Regel einmal täglich versendet; der erste trifft bis zu 24 Stunden nach Einrichtung des DMARC-Eintrags ein.") }}</p>
   {% if last_fetch %}<p class="muted">{{ _("Letzter Abruf: {t}", t=fmt.datetime(last_fetch)) }}</p>{% endif %}
   {% else %}
-  <p>{{ _("Es ist kein IMAP-Postfach eingerichtet. Lade Berichte auf der Statusseite hoch oder setze IMAP_HOST, IMAP_USER und IMAP_PASSWORD.") }}</p>
+  <p>{{ _("Es ist kein IMAP-Postfach konfiguriert. Berichte lassen sich auf der Statusseite hochladen; für den automatischen Abruf IMAP_HOST, IMAP_USER und IMAP_PASSWORD festlegen.") }}</p>
   {% endif %}
   <p><a class="btn" href="/status">{{ _("Zur Statusseite") }}</a> <a class="btn ghost" href="/help">{{ _("Was ist DMARC?") }}</a></p>
 </section>
@@ -35,12 +35,12 @@
     <div class="dc-stats">
       <div class="big">{{ m.rate(s.rate) }}<span class="lbl">{{ _("DMARC bestanden") }}</span></div>
       <dl>
-        <div><dt>{{ _("Mails") }}</dt><dd>{{ num(s.messages) }}</dd></div>
-        <div><dt>{{ _("Durchgefallen") }}</dt><dd {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</dd></div>
+        <div><dt>{{ _("E-Mails") }}</dt><dd>{{ num(s.messages) }}</dd></div>
+        <div><dt>{{ _("Nicht bestanden") }}</dt><dd {% if s.failed %}class="bad-text"{% endif %}>{{ num(s.failed) }}</dd></div>
         <div><dt>{{ _("Berichte") }}</dt><dd>{{ num(s.reports) }}</dd></div>
       </dl>
     </div>
-    {{ bar_chart(s.daily, fmt, 56, _("Mails pro Tag für {d}", d=s.domain)) }}
+    {{ bar_chart(s.daily, fmt, 56, _("E-Mails pro Tag für {d}", d=s.domain)) }}
     {% else %}
     <p class="muted">{{ _("Keine DMARC-Berichte im Zeitraum.") }}</p>
     {% endif %}
@@ -53,7 +53,7 @@
 {{ m.legend() }}
 
 <section class="card">
-  <h2>{{ _("Was auffiel") }}</h2>
+  <h2>{{ _("Auffälligkeiten") }}</h2>
   {% if problems %}
     {% for item in problems %}{% set p = item.p %}{% set e = item.ex %}
     <article class="explain level-{{ e.level }}">
@@ -67,7 +67,7 @@
     {% endfor %}
     <p><a href="/reports?days={{ days }}&failed=1">{{ _("Alle Berichte mit Fehlschlägen") }} →</a></p>
   {% else %}
-    <p class="all-good">{{ m.status_icon('ok') }} {{ _("Im gewählten Zeitraum hat keine einzige Mail DMARC verfehlt.") }}</p>
+    <p class="all-good">{{ m.status_icon('ok') }} {{ _("Im gewählten Zeitraum haben alle E-Mails DMARC bestanden.") }}</p>
   {% endif %}
 </section>
 {% endif %}

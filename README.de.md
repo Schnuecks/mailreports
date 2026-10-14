@@ -38,9 +38,11 @@ haben – statt XML und Fehlercodes.
   angefasst. Doppelte Berichte werden erkannt.
 - **Push-Meldungen** über Pushover bei neuen Fehlschlägen, unbekannten Absendern und
   TLS-Problemen, höchstens einmal am Tag pro Fund
-- **Von Anfang an geschützt:** Anmeldung mit Passwort (auf Wunsch als Argon2-Hash,
-  Fehlversuche begrenzt) oder über deinen Reverse-Proxy mit Forward-Auth-Headern wie
-  `Remote-User` (z. B. Authelia); ohne beides startet die App nicht
+- **Benutzerkonten** mit den Rollen Administration und Lesezugriff, **Zwei-Faktor-Anmeldung**
+  mit Authenticator-App und Wiederherstellungscodes, **Passkeys und Sicherheitsschlüssel**,
+  **Single Sign-on** über einen OpenID-Connect-Anbieter (z. B. Authelia) und ein
+  Anmeldeprotokoll – oder Anmeldung über deinen Reverse-Proxy mit Forward-Auth-Headern wie
+  `Remote-User`
 - **Geheimnisse aus Dateien** (`IMAP_PASSWORD_FILE`, `PUSHOVER_TOKEN_FILE`, …) für Docker-Secrets
 - **Hochladen und Importieren** älterer Berichtsdateien, **Hilfeseiten** zu SPF, DKIM,
   DMARC, Ausrichtung und TLS-Reporting
@@ -64,13 +66,12 @@ curl -o .env https://raw.githubusercontent.com/schnuecks/mailreports/main/.env.e
 curl -o sources.toml https://raw.githubusercontent.com/schnuecks/mailreports/main/sources.example.toml
 mkdir data secrets && sudo chown 10001 data
 printf '%s' 'dein-imap-passwort' > secrets/imap_password.txt
-printf '%s' 'ein-langes-passwort-fuer-die-seite' > secrets/admin_password.txt
 docker compose up -d
 ```
 
 Vorher in `.env` `IMAP_HOST` und `IMAP_USER` eintragen und in `sources.toml` deinen eigenen
-Mailserver beschreiben. Dann `http://<server>:8080` öffnen und mit dem Passwort aus
-`secrets/admin_password.txt` anmelden; die ersten Berichte kommen innerhalb eines Tages. Aktualisieren: `docker compose pull && docker compose up -d`.
+Mailserver beschreiben. Dann `http://<server>:8080` öffnen und das erste Konto anlegen; der Einrichtungscode steht im
+Log (`docker compose logs mailreports`). Die ersten Berichte kommen innerhalb eines Tages. Aktualisieren: `docker compose pull && docker compose up -d`.
 
 Für den Zugriff über das Internet gehört es hinter einen Reverse-Proxy mit Anmeldung; siehe
 [Installation](docs/de/installation.md).

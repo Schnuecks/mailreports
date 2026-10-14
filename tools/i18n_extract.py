@@ -16,7 +16,7 @@ from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parent.parent
 PKG = ROOT / "mailreports"
-FUNCS = {"_", "gettext", "ngettext"}
+FUNCS = {"_", "gettext", "ngettext", "N_"}
 
 
 def from_python(path: Path) -> set[str]:

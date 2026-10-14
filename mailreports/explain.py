@@ -56,7 +56,7 @@ def source_label(verdict: Verdict, ip: str, info) -> str:
     host = info["ptr"] if info and info["ptr"] else ip
     where = origin(info)
     if verdict.kind == "forwarder":
-        return _("Weiterleitung über {host}", host=host)
+        return _("einer Weiterleitung über {host}", host=host)
     if where:
         return _("unbekannter Absender {host} ({where})", host=host, where=where)
     return _("unbekannter Absender {host}", host=host)
@@ -64,9 +64,9 @@ def source_label(verdict: Verdict, ip: str, info) -> str:
 
 def disposition_text(disposition: str) -> str:
     return {
-        "none": _("trotzdem zugestellt"),
-        "quarantine": _("in Quarantäne bzw. in den Spam-Ordner verschoben"),
-        "reject": _("komplett abgewiesen"),
+        "none": _("dennoch zugestellt"),
+        "quarantine": _("in Quarantäne verschoben"),
+        "reject": _("abgewiesen"),
     }.get(disposition, disposition or "?")
 
 
@@ -95,7 +95,7 @@ def explain_record(record, verdict: Verdict, info, policy) -> Explanation:
     who = source_label(verdict, record["source_ip"], info)
     dkim = _loads(record["dkim"])
     spf = _loads(record["spf"])
-    mails = ngettext("Diese Mail", "Diese {n} Mails", n)
+    mails = ngettext("Diese E-Mail", "Diese {n} E-Mails", n)
     good_sig = _aligned_dkim(dkim, domain, policy["adkim"] == "s")
     passing_foreign = [s for s in dkim if s.get("result") == "pass" and s is not good_sig]
 
@@ -106,22 +106,24 @@ def explain_record(record, verdict: Verdict, info, policy) -> Explanation:
             parts.append(_("korrekt mit {domain} signiert (DKIM-Selektor {sel})", domain=domain, sel=sel))
         if record["spf_eval"] == "pass":
             parts.append(_("IP per SPF für {domain} erlaubt", domain=domain))
-        text = _("{mails} kamen von {who}: {details}.", mails=mails, who=who, details=", ".join(parts))
+        text = _("{mails} stammen von {who}: {details}.", mails=mails, who=who, details=", ".join(parts))
         if record["spf_eval"] != "pass" and verdict.kind == "forwarder":
-            text += " " + _("SPF passte nicht, weil die Mails weitergeleitet wurden – "
-                            "die DKIM-Signatur hat das überstanden, das ist in Ordnung.")
+            text += " " + _("SPF wurde aufgrund der Weiterleitung nicht bestanden; die DKIM-Signatur blieb "
+                            "gültig. Kein Handlungsbedarf.")
         elif record["spf_eval"] != "pass" and verdict.kind in ("own", "relay"):
             other = sorted({s.get("domain", "") for s in spf
                             if s.get("result") == "pass" and s.get("domain") != domain})
             if other:
-                text += " " + _("SPF hat für die eigene Absender-Domain des Dienstes bestanden ({env}), nicht für "
-                                "{domain} – bei solchen Diensten üblich, DKIM deckt das ab.",
+                text += " " + _("SPF wurde für die Absender-Domain des Dienstes ({env}) bestanden, nicht für "
+                                "{domain}. Bei solchen Diensten ist das üblich; die Authentifizierung erfolgt über "
+                                "DKIM.",
                                 env=", ".join(other), domain=domain)
             else:
-                text += " " + _("SPF passte allerdings nicht – prüfe, ob diese IP im SPF-Eintrag steht.")
+                text += " " + _("SPF wurde jedoch nicht bestanden. Prüfen, ob diese IP-Adresse im SPF-Eintrag "
+                                "enthalten ist.")
         elif record["dkim_eval"] != "pass" and verdict.kind in ("own", "relay"):
-            text += " " + _("DKIM fehlte oder passte nicht – nur SPF hat DMARC gerettet. "
-                            "Bei Weiterleitungen würden diese Mails durchfallen.")
+            text += " " + _("DKIM fehlte oder war ungültig; DMARC wurde nur über SPF bestanden. "
+                            "Bei einer Weiterleitung würden diese E-Mails DMARC nicht bestehen.")
         level = "ok" if record["dkim_eval"] == "pass" else "warn"
         return Explanation(level, _("DMARC bestanden"), text)
 
@@ -131,7 +133,7 @@ def explain_record(record, verdict: Verdict, info, policy) -> Explanation:
         reasons.append(_("keine gültige DKIM-Signatur"))
     elif passing_foreign:
         doms = ", ".join(sorted({s.get("domain", "?") for s in passing_foreign}))
-        reasons.append(_("nur mit fremder Domain signiert ({doms})", doms=doms))
+        reasons.append(_("nur mit abweichender Domain signiert ({doms})", doms=doms))
     spf_res = ", ".join(sorted({s.get("result", "?") for s in spf})) or "none"
     if record["spf_eval"] != "pass":
         if any(s.get("result") == "pass" for s in spf):
@@ -142,19 +144,20 @@ def explain_record(record, verdict: Verdict, info, policy) -> Explanation:
     outcome = disposition_text(record["disposition"])
     why = "; ".join(reasons)
     if verdict.kind == "unknown":
-        text = _("{who} hat versucht, als {domain} zu senden ({count}): {why}. Der Empfänger hat sie {outcome}.",
-                 who=who, domain=domain, count=ngettext("{n} Mail", "{n} Mails", n), why=why, outcome=outcome)
+        text = _("{who} hat im Namen von {domain} gesendet ({count}), ohne sich zu authentifizieren: {why}. "
+                 "Der empfangende Server hat die E-Mails {outcome}.",
+                 who=who, domain=domain, count=ngettext("{n} E-Mail", "{n} E-Mails", n), why=why, outcome=outcome)
         level = "bad" if record["disposition"] == "none" else "warn"
-        return Explanation(level, _("Fremder Absender abgewehrt") if record["disposition"] != "none"
-                           else _("Fremder Absender zugestellt"), text)
+        return Explanation(level, _("Unberechtigter Absender abgewiesen") if record["disposition"] != "none"
+                           else _("Unberechtigter Absender zugestellt"), text)
     if verdict.kind == "forwarder":
-        text = _("{mails} wurden über {who} weitergeleitet und haben dabei die Prüfung verloren: {why}. "
-                 "Der Empfänger hat sie {outcome}.", mails=mails, who=who, why=why, outcome=outcome)
-        return Explanation("warn", _("Weiterleitung durchgefallen"), text)
-    text = _("{mails} kamen von {who} – eigentlich ein bekannter Absender –, aber DMARC schlug fehl: {why}. "
-             "Der Empfänger hat sie {outcome}. Hier stimmt vermutlich eine Einstellung nicht.",
+        text = _("{mails} wurden über {who} weitergeleitet; dabei ging die Authentifizierung verloren: {why}. "
+                 "Der empfangende Server hat sie {outcome}.", mails=mails, who=who, why=why, outcome=outcome)
+        return Explanation("warn", _("Weiterleitung nicht authentifiziert"), text)
+    text = _("{mails} stammen von {who}, einem bekannten Absender, haben DMARC aber nicht bestanden: {why}. "
+             "Der empfangende Server hat sie {outcome}. Die Konfiguration dieses Absenders sollte geprüft werden.",
              mails=mails, who=who, why=why, outcome=outcome)
-    return Explanation("bad", _("Bekannter Absender durchgefallen"), text)
+    return Explanation("bad", _("Bekannter Absender nicht authentifiziert"), text)
 
 
 # ---------------------------------------------------------------- TLS
@@ -170,7 +173,7 @@ def tls_result(result_type: str) -> tuple[str, str]:
             _("Das Zertifikat des Mailservers gilt für einen anderen Hostnamen als den MX-Eintrag.")),
         "certificate-expired": (
             _("Zertifikat abgelaufen"),
-            _("Das Zertifikat des Mailservers ist abgelaufen – sofort erneuern.")),
+            _("Das Zertifikat des Mailservers ist abgelaufen und muss erneuert werden.")),
         "certificate-not-trusted": (
             _("Zertifikat nicht vertrauenswürdig"),
             _("Das Zertifikat stammt nicht von einer anerkannten Stelle oder die Zwischenzertifikate fehlen.")),
@@ -196,7 +199,7 @@ def tls_result(result_type: str) -> tuple[str, str]:
             _("MTA-STS-Zertifikat ungültig"),
             _("Das HTTPS-Zertifikat von mta-sts.<domain> ist ungültig.")),
     }
-    return table.get(result_type, (result_type, _("Unbekannter Fehlertyp laut Bericht.")))
+    return table.get(result_type, (result_type, _("Im Bericht angegebener, nicht näher bekannter Fehlertyp.")))
 
 
 def tls_policy_label(policy_type: str) -> str:

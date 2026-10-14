@@ -38,9 +38,10 @@ XML and result codes.
   Duplicate reports are recognised.
 - **Push notifications** via Pushover for new failures, unknown senders and TLS problems,
   at most once a day per finding
-- **Protected from the start:** sign-in with a password (stored as an Argon2 hash if you
-  like, failed attempts limited), or through your reverse proxy with forward auth headers
-  such as `Remote-User` (e.g. Authelia); without either, the app does not start
+- **User accounts** with administrator and read-only roles, **two-factor sign-in** with an
+  authenticator app and recovery codes, **passkeys and security keys**, **single sign-on**
+  through an OpenID Connect provider (e.g. Authelia) and a sign-in log – or sign-in through
+  your reverse proxy with forward auth headers such as `Remote-User`
 - **Secrets from files** (`IMAP_PASSWORD_FILE`, `PUSHOVER_TOKEN_FILE`, …) for Docker secrets
 - **Upload and import** of older report files, **help pages** on SPF, DKIM, DMARC, alignment
   and TLS reporting
@@ -64,13 +65,12 @@ curl -o .env https://raw.githubusercontent.com/schnuecks/mailreports/main/.env.e
 curl -o sources.toml https://raw.githubusercontent.com/schnuecks/mailreports/main/sources.example.toml
 mkdir data secrets && sudo chown 10001 data
 printf '%s' 'your-imap-password' > secrets/imap_password.txt
-printf '%s' 'a-long-password-for-the-page' > secrets/admin_password.txt
 docker compose up -d
 ```
 
 Fill in `IMAP_HOST` and `IMAP_USER` in `.env` and describe your own mail server in
-`sources.toml` first. Then open `http://<server>:8080` and sign in with the password from
-`secrets/admin_password.txt`; the first reports arrive within a day. To update: `docker compose pull && docker compose up -d`.
+`sources.toml` first. Then open `http://<server>:8080` and create the first account; the setup code is in the log
+(`docker compose logs mailreports`). The first reports arrive within a day. To update: `docker compose pull && docker compose up -d`.
 
 For use over the internet, put it behind a reverse proxy with a login; see
 [Installation](docs/en/installation.md).

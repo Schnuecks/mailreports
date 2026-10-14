@@ -30,9 +30,14 @@ files are therefore treated as untrusted input:
 
 Access:
 
-- The app does not start without a sign-in: a password (`ADMIN_PASSWORD`, plain or as an
-  Argon2 hash, signed HttpOnly session cookie, failed attempts limited per address) or a
-  login proxy with `AUTH_HEADER`. The header is only trusted together with
+- Every page requires a sign-in. Built-in accounts: passwords hashed with Argon2id; session
+  tokens, setup and recovery codes stored only as SHA-256 hashes; HttpOnly session cookie
+  (with the `__Host-` prefix over HTTPS); CSRF token on every form; failed sign-ins limited
+  per username and address; optional two-factor sign-in (TOTP, passkeys/WebAuthn) with
+  authenticator keys encrypted by `SECRET_KEY`; single sign-on with PKCE, nonce and a
+  state cookie bound to the browser; a sign-in log. The first account needs a setup code
+  from the container log.
+- Alternatively a login proxy with `AUTH_HEADER`. The header is only trusted together with
   `TRUSTED_PROXIES` (the app refuses to start without it);
   set it to the proxy's own address, not the whole Docker network, and do not publish the
   port, otherwise other containers could send the header themselves.

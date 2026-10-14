@@ -2,6 +2,25 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.2.0
+
+- **User accounts** instead of the single password: administrator and read-only roles,
+  first account through a setup code from the container log (or `ADMIN_PASSWORD` on the
+  first start; an existing `ADMIN_PASSWORD` becomes the account `admin`)
+- **Two-factor sign-in** with an authenticator app (TOTP) and single-use recovery codes;
+  authenticator keys can be encrypted in the database with `SECRET_KEY`
+- **Passkeys and security keys** (WebAuthn): sign-in without a password or as second factor
+- **Single sign-on** through an OpenID Connect provider (`OIDC_ISSUER`, `OIDC_CLIENT_ID`,
+  `OIDC_CLIENT_SECRET`), with admin and allowed groups and optional account creation
+- Account page with password change and active sessions; user management and sign-in log
+  for administrators; account commands on the command line (`create-user`, `set-password`,
+  `reset-2fa`, `list-users`, `setup-code`)
+- CSRF token on every form; uploading reports and starting a fetch need the administrator
+  role
+- More precise and neutral wording throughout the interface, in German and English
+- `PUBLIC_URL` for passkeys and single sign-on behind a reverse proxy
+- Running behind a login proxy (`AUTH_HEADER`) is unchanged
+
 ## 0.1.2
 
 These changes were meant for 0.1.1 but did not make it into that release.

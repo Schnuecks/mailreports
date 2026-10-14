@@ -1,7 +1,6 @@
 # Example setup. Copy .env.example to .env and adjust it, put the IMAP password into
-# ./secrets/imap_password.txt and the password for signing in to the page into
-# ./secrets/admin_password.txt (or its hash from `python -m mailreports hash-password`),
-# then start with: docker compose up -d
+# ./secrets/imap_password.txt and start with: docker compose up -d
+# The setup code for the first account is in the log: docker compose logs mailreports
 services:
   mailreports:
     image: ghcr.io/schnuecks/mailreports:latest
@@ -10,11 +9,9 @@ services:
     env_file: .env
     environment:
       IMAP_PASSWORD_FILE: /run/secrets/imap_password
-      ADMIN_PASSWORD_FILE: /run/secrets/admin_password
       SOURCES_FILE: /config/sources.toml
     secrets:
       - imap_password
-      - admin_password
     volumes:
       - ./data:/data
       - ./sources.toml:/config/sources.toml:ro
@@ -32,5 +29,3 @@ services:
 secrets:
   imap_password:
     file: ./secrets/imap_password.txt
-  admin_password:
-    file: ./secrets/admin_password.txt

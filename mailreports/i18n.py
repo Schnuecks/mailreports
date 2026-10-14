@@ -4,7 +4,7 @@
 
 The German texts in the code are also the keys. mailreports/locales/<code>.json
 maps them to the translation; if an entry is missing, the German text remains.
-Placeholders are in curly braces: _("{n} Mails", n=3).
+Placeholders are in curly braces: _("{n} E-Mails", n=3).
 
 The language applies per request: cookie "lang", otherwise DEFAULT_LANGUAGE,
 otherwise the browser language, otherwise English.
@@ -62,3 +62,8 @@ def pick_language(cookie: str | None, default: str | None, accept: str | None) -
 
 
 _ = gettext
+
+
+def N_(msg: str) -> str:
+    """Marks a text for translation without translating it yet (constants)."""
+    return msg

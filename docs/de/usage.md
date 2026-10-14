@@ -59,12 +59,34 @@ Zahl der gespeicherten Berichte, welche Zusatzdienste aktiv sind (GeoIP, Reverse
 bekannte Quellen, Pushover) und die zuletzt verarbeiteten Mails, mit dem Grund, wenn eine
 Mail keinen verwertbaren Bericht enthielt.
 
+## Konten
+
+Die Kontoseite (dein Name oben rechts) bietet:
+
+- **Zwei-Faktor-Anmeldung** mit Authenticator-App: QR-Code scannen und mit einem Code
+  bestätigen. Acht Wiederherstellungscodes werden einmalig angezeigt; jeder ersetzt den
+  zweiten Faktor einmal.
+- **Passkeys und Sicherheitsschlüssel:** Anmeldung ohne Passwort oder als zweiter Faktor nach
+  dem Passwort. Passkeys sind an die Adresse in `PUBLIC_URL` gebunden.
+- **Passwort ändern** (beendet alle anderen Sitzungen) und **aktive Sitzungen** mit der
+  Möglichkeit, sie zu beenden.
+
+Administratorinnen und Administratoren verwalten Konten unter **Benutzer** (anlegen, Passwort
+setzen, Rolle ändern, deaktivieren, zweite Faktoren zurücksetzen, löschen) und sehen das
+**Anmeldeprotokoll** mit erfolgreichen und abgelehnten Anmeldungen. Das letzte aktive
+Administratorkonto lässt sich nicht entfernen.
+
 ## Kommandozeile
 
 ```bash
 python -m mailreports check            # Einstellungen und IMAP-Anmeldung
 python -m mailreports fetch            # einmal abrufen
 python -m mailreports import DATEIEN...  # Dateien oder Ordner importieren (.xml .json .gz .zip .eml)
+python -m mailreports create-user NAME [--admin]
+python -m mailreports set-password NAME
+python -m mailreports reset-2fa NAME   # entfernt Authenticator-App, Passkeys, Wiederherstellungscodes
+python -m mailreports list-users
+python -m mailreports setup-code
 ```
 
 Im Docker-Container: `docker compose exec mailreports python -m mailreports check`.

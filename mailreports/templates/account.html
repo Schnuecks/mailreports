@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Konto") }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Konto") }} <small>· {{ account.username }}</small></h1></div>
+{% if message %}<div class="notice ok" role="status">{{ message }}</div>{% endif %}
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+
+<div class="grid two">
+<section class="card">
+  <h2>{{ _("Zwei-Faktor-Anmeldung") }}</h2>
+  <p class="muted">{{ _("Nach dem Passwort wird zusätzlich ein Code aus einer Authenticator-App oder ein Passkey verlangt.") }}</p>
+  <dl class="kv">
+    <dt>{{ _("Authenticator-App") }}</dt><dd>{{ _("eingerichtet") if account.totp_enabled else _("nicht eingerichtet") }}</dd>
+    <dt>{{ _("Passkeys") }}</dt><dd>{{ keys|length }}</dd>
+    {% if account.totp_enabled or keys %}<dt>{{ _("Wiederherstellungscodes") }}</dt><dd>{{ _("{n} unbenutzt", n=recovery) }}</dd>{% endif %}
+  </dl>
+  {% if not account.totp_enabled %}
+  <form method="post" action="/account/2fa/start"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">{{ _("Authenticator-App einrichten") }}</button></form>
+  {% else %}
+  <form method="post" action="/account/2fa/disable" class="inline-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="password" name="password" autocomplete="current-password" placeholder="{{ _('Aktuelles Passwort') }}" required aria-label="{{ _('Aktuelles Passwort') }}">
+    <button class="btn ghost">{{ _("Authenticator-App entfernen") }}</button>
+  </form>
+  {% endif %}
+  {% if account.totp_enabled or keys %}
+  <form method="post" action="/account/2fa/recovery" class="inline-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="password" name="password" autocomplete="current-password" placeholder="{{ _('Aktuelles Passwort') }}" required aria-label="{{ _('Aktuelles Passwort') }}">
+    <button class="btn ghost">{{ _("Neue Wiederherstellungscodes") }}</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>{{ _("Passkeys und Sicherheitsschlüssel") }}</h2>
+  <p class="muted">{{ _("Mit einem Passkey ist die Anmeldung ohne Passwort möglich; nach einer Anmeldung mit Passwort dient er als zweiter Faktor.") }}</p>
+  {% if keys %}
+  <ul class="plain-list">{% for k in keys %}
+    <li><strong>{{ k.name }}</strong> <small class="muted">{{ _("hinzugefügt am {d}", d=fmt.date(k.created_at)) }}{% if k.last_used_at %} · {{ _("zuletzt genutzt am {d}", d=fmt.date(k.last_used_at)) }}{% endif %}</small>
+      <form method="post" action="/account/passkeys/{{ k.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike">{{ _("Entfernen") }}</button></form></li>
+  {% endfor %}</ul>
+  {% endif %}
+  <form data-passkey-register hidden class="inline-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input name="name" maxlength="60" placeholder="{{ _('Bezeichnung, z. B. Laptop') }}" aria-label="{{ _('Bezeichnung') }}">
+    <button class="btn">{{ _("Passkey hinzufügen") }}</button>
+  </form>
+  <p class="muted small" data-passkey-unsupported>{{ _("Dieser Browser unterstützt keine Passkeys.") }}</p>
+  <p class="notice bad" data-passkey-error hidden
+     data-fallback="{{ _('Der Passkey konnte nicht geprüft werden. Bitte erneut versuchen.') }}"
+     data-cancelled="{{ _('Abgebrochen oder auf diesem Gerät nicht möglich.') }}"></p>
+</section>
+
+<section class="card">
+  <h2>{{ _("Passwort ändern") }}</h2>
+  <form method="post" action="/account/password" class="stack-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>{{ _("Aktuelles Passwort") }}<input type="password" name="current" autocomplete="current-password" required></label>
+    <label>{{ _("Neues Passwort") }}<input type="password" name="password" autocomplete="new-password" minlength="10" required></label>
+    <label>{{ _("Neues Passwort wiederholen") }}<input type="password" name="repeat" autocomplete="new-password" minlength="10" required></label>
+    <button class="btn">{{ _("Passwort ändern") }}</button>
+  </form>
+  <p class="muted small">{{ _("Nach der Änderung werden alle anderen Sitzungen beendet.") }}</p>
+</section>
+
+<section class="card">
+  <h2>{{ _("Aktive Sitzungen") }}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _("Gerät") }}</th><th>{{ _("Adresse") }}</th><th>{{ _("Zuletzt aktiv") }}</th><th></th></tr></thead>
+    <tbody>{% for s in sessions %}
+      <tr><td><small>{{ s.client_info|truncate(70) }}</small></td><td><code>{{ s.ip }}</code></td><td>{{ fmt.datetime(s.last_used_at) }}</td>
+      <td>{% if s.id == account.s_id %}<span class="badge">{{ _("diese Sitzung") }}</span>{% else %}<form method="post" action="/account/sessions/{{ s.id }}/end"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike">{{ _("Beenden") }}</button></form>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+</div>
+{% endblock %}

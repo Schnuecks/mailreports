@@ -253,3 +253,27 @@ select, input[type=file] { font: inherit; color: var(--text); background: var(--
 .login form { display: flex; flex-direction: column; gap: .6rem; }
 .login label { font-size: .85rem; color: var(--muted); }
 input[type=password] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; }
+input[type=text], input:not([type]), input[type=email] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; }
+.login .or { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; margin: 1rem 0 .6rem; }
+.login .or::before, .login .or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.btn.wide { display: block; width: 100%; text-align: center; margin-top: .4rem; }
+.qr-box { display: flex; justify-content: center; margin: .5rem 0; }
+.qr-box svg { width: 200px; height: 200px; background: #fff; border-radius: 10px; }
+ul.codes { columns: 2; list-style: none; padding: 0; margin: 1rem 0; }
+ul.codes li { margin: .3rem 0; }
+.inline-form { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
+.inline-form input { flex: 1 1 12rem; }
+form.inline { display: inline; margin-left: .5rem; }
+.stack-form { display: flex; flex-direction: column; gap: .6rem; }
+.stack-form label, .grid-form label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--muted); }
+.stack-form label.check, .grid-form label.check { flex-direction: row; align-items: center; gap: .4rem; color: var(--text); font-size: .9rem; }
+.stack-form .btn { align-self: flex-start; }
+.grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; align-items: end; }
+.grid-form label.check { grid-column: 1 / -1; }
+ul.plain-list { list-style: none; padding: 0; margin: 0 0 .5rem; }
+ul.plain-list li { padding: .4rem 0; border-bottom: 1px solid var(--line); }
+.danger-zone { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.btn.danger { color: var(--bad-text); border-color: var(--bad); }
+.btn.danger:hover { background: var(--bad); color: #fff; }
+a.user { color: var(--text); text-decoration: none; font-weight: 600; }
+a.user[aria-current] { color: var(--accent); }
