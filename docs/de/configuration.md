@@ -32,7 +32,7 @@ zählt als doppelt.
 | `THEME` | neutral | Farbschema: `neutral` (Grau und Blau) oder `olive` (Olivgrün); hell und dunkel richten sich nach dem Gerät |
 | `LOGO_URL` | eingebautes Symbol | Logo (34 px in der Kopfleiste) und Favicon, z. B. eine HTTPS-Adresse |
 | `DEFAULT_LANGUAGE` | Browsersprache | `de`, `en`, `fr`, `es`, `it` oder `nl` |
-| `DOMAINS` | alle | Kommagetrennt: welche Domains die Übersicht zeigt, in dieser Reihenfolge |
+| `DOMAINS` | alle | Kommagetrennt: die eigenen Domains, in der Reihenfolge der Übersicht. Berichte für andere Domains werden nicht gespeichert (Subdomains der eigenen schon) – empfohlen, weil jeder Berichte an die öffentliche Berichtsadresse schicken kann |
 | `TZ` | `UTC` | Zeitzone für Datumsangaben, z. B. `Europe/Berlin` |
 | `SOURCE_URL` | `https://github.com/Schnuecks/mailreports` | Link zum Quellcode in der Fußzeile; leer blendet ihn aus |
 
@@ -103,7 +103,13 @@ Sitzungen des Kontos.
 | `OIDC_NAME` | `SSO` | Beschriftung der Schaltfläche „Mit … anmelden“ |
 | `OIDC_ADMIN_GROUP` | – | Mitglieder dieser Gruppe erhalten Administrationsrechte |
 | `OIDC_ALLOWED_GROUP` | – | Nur Mitglieder dieser Gruppe (oder der Admin-Gruppe) dürfen sich anmelden |
-| `OIDC_CREATE_USERS` | `false` | Beim ersten Anmelden ein Konto anlegen; sonst können sich nur bestehende Konten anmelden (zugeordnet über Benutzername oder bestätigte E-Mail-Adresse) |
+| `OIDC_CREATE_USERS` | `false` | Beim ersten Anmelden ein Konto anlegen; sonst können sich nur bestehende Konten anmelden |
+| `OIDC_LINK_USERNAME` | `false` | Bestehende Konten auch über den Benutzernamen zuordnen. Nur bei Anbietern, bei denen man seinen Namen nicht selbst wählen kann |
+
+Beim ersten Anmelden wird ein bestehendes Konto über die bestätigte E-Mail-Adresse zugeordnet (mit
+`OIDC_LINK_USERNAME` auch über den Benutzernamen). Administratorkonten werden nie automatisch
+zugeordnet: Admins melden sich einmal mit dem Passwort an und verknüpfen das Konto beim Anbieter
+unter **Konto → Single Sign-on**.
 
 Beim Anbieter `PUBLIC_URL/oidc/callback` als Redirect-URI eintragen, mit den Scopes
 `openid profile email groups`.

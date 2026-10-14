@@ -2,6 +2,23 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.4.4
+
+Security fixes from a review before the public release:
+
+- **Memory bomb by email:** the unpack limit (50 MB) now applies to the whole email instead of
+  each archive level; at most 20 files per zip archive; emails over 25 MB are not downloaded
+- Every email is marked as failed before processing and as done afterwards, so an email that
+  crashes the process is not retried on every fetch
+- **Single sign-on:** existing accounts are no longer matched by username (only with the new
+  `OIDC_LINK_USERNAME`), and administrator accounts are never matched automatically – admins
+  link their provider account on the account page
+- **Behind a reverse proxy** from `TRUSTED_PROXIES`, sign-in limits, the sign-in log and the
+  session list use the visitor's address from `X-Forwarded-For` instead of the proxy's
+- With `DOMAINS` set, reports for other domains are no longer stored
+- Warning at startup when `IMAP_SECURITY=none` sends the password to a remote server
+- Base image pinned by digest and GitHub Actions by commit
+
 ## 0.4.3
 
 - Phone layout of the settings: tabs in one line with short labels, short fields side by side

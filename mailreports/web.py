@@ -3,6 +3,7 @@
 """Templates and formatting helpers."""
 from __future__ import annotations
 
+import ipaddress
 import json
 from datetime import datetime
 from pathlib import Path
@@ -130,8 +131,36 @@ PERIODS = (7, 30, 90, 365)
 COOKIE = "mailreports_session"
 
 
-def client_ip(request) -> str:
+def peer_ip(request) -> str:
+    """Address of the direct peer, i.e. the reverse proxy if there is one."""
     return request.client.host if request.client else ""
+
+
+def _trusted(addr: str, networks) -> bool:
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    return any(ip in net for net in networks)
+
+
+def client_ip(request) -> str:
+    """Address of the visitor. Behind a proxy from TRUSTED_PROXIES the rightmost address in
+    X-Forwarded-For that is not a trusted proxy; otherwise the peer itself (the header can be
+    forged by anybody who reaches the port directly)."""
+    peer = peer_ip(request)
+    networks = request.app.state.svc.settings.trusted_proxies
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if not networks or not forwarded or not _trusted(peer, networks):
+        return peer
+    for part in reversed([p.strip() for p in forwarded.split(",") if p.strip()]):
+        try:
+            addr = str(ipaddress.ip_address(part))
+        except ValueError:
+            return peer
+        if not _trusted(addr, networks):
+            return addr
+    return peer
 
 
 def cookie_secure(request, settings) -> bool:

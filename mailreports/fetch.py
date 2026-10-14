@@ -10,6 +10,10 @@ skipped on the next fetch, so a mail is looked at only once.
 With IMAP_READONLY the mailbox is opened read-only and nothing is changed at all; the
 UIDs of processed mails are remembered in the database instead. Useful when another
 program reads the same mailbox.
+
+The report address is public, so anybody can send mail to it. Mails larger than MAX_MAIL
+are not downloaded, and every mail is marked as an error *before* it is processed and only
+marked as done afterwards: a mail that crashes the process is not tried again on every run.
 """
 from __future__ import annotations
 
@@ -29,6 +33,8 @@ log = logging.getLogger(__name__)
 KW_DONE = "$MailreportsDone"
 KW_ERROR = "$MailreportsError"
 BATCH = 200          # mails per run; the rest follows on the next run
+MAX_MAIL = 25 * 1024 * 1024   # larger mails are skipped (real reports are a few KB)
+_SIZE = re.compile(rb"RFC822\.SIZE (\d+)")
 
 
 @dataclass
@@ -81,10 +87,22 @@ def _move(conn: imaplib.IMAP4, uid: bytes, folder: str, capabilities: set[str]) 
 def _finish(conn, uid: bytes, ok: bool, settings: Settings, capabilities: set[str]) -> None:
     folder = settings.imap_move_to if ok else settings.imap_error_folder
     keyword = KW_DONE if ok else KW_ERROR
+    if ok:
+        conn.uid("STORE", uid, "-FLAGS.SILENT", f"({KW_ERROR})")
     if folder:
         _move(conn, uid, folder, capabilities)
     else:
         conn.uid("STORE", uid, "+FLAGS.SILENT", f"(\\Seen {keyword})")
+
+
+def _size(conn, uid: bytes) -> int | None:
+    typ, parts = conn.uid("FETCH", uid, "(RFC822.SIZE)")
+    for part in parts or []:
+        text = part[0] if isinstance(part, tuple) else part
+        match = _SIZE.search(text or b"") if isinstance(text, bytes) else None
+        if match:
+            return int(match.group(1))
+    return None
 
 
 def fetch(db: Database, settings: Settings) -> FetchResult:
@@ -116,17 +134,30 @@ def fetch(db: Database, settings: Settings) -> FetchResult:
             seen = db.seen_uids(settings.imap_folder, uidvalidity)
             uids = [u for u in uids if int(u) not in seen]
         for uid in uids[:BATCH]:
-            typ, parts = conn.uid("FETCH", uid, "(BODY.PEEK[])")
-            raw = next((p[1] for p in parts or [] if isinstance(p, tuple) and len(p) > 1), None)
-            if typ != "OK" or raw is None:
-                log.warning("mail UID %s could not be fetched", uid)
-                continue
-            out = ingest_mail(db, raw)
-            result.mails += 1
-            result.outcome.merge(out)
+            # claim the mail first, so that a mail which kills the process is not retried forever
             if readonly:
                 db.mark_uid_seen(settings.imap_folder, uidvalidity, int(uid))
             else:
+                conn.uid("STORE", uid, "+FLAGS.SILENT", f"({KW_ERROR})")
+            size = _size(conn, uid)
+            if size is not None and size > MAX_MAIL:
+                log.warning("mail UID %s skipped: %d bytes", uid, size)
+                db.log_mail("", "", "", "error", f"mail too large ({size // 1024 // 1024} MB), not downloaded")
+                out = Outcome(errors=["mail too large"])
+            else:
+                typ, parts = conn.uid("FETCH", uid, "(BODY.PEEK[])")
+                raw = next((p[1] for p in parts or [] if isinstance(p, tuple) and len(p) > 1), None)
+                if typ != "OK" or raw is None:
+                    log.warning("mail UID %s could not be fetched", uid)
+                    continue
+                try:
+                    out = ingest_mail(db, raw, settings.domains)
+                except Exception as exc:  # one bad mail must not stop the run
+                    log.exception("mail UID %s could not be processed", uid)
+                    out = Outcome(errors=[f"processing failed: {exc.__class__.__name__}"])
+            result.mails += 1
+            result.outcome.merge(out)
+            if not readonly:
                 _finish(conn, uid, out.found_any, settings, caps)
         if not readonly and (settings.imap_move_to or settings.imap_error_folder):
             if "UIDPLUS" not in caps and "MOVE" not in caps:

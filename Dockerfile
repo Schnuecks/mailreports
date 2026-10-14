@@ -1,4 +1,5 @@
-FROM python:3.15-slim
+# Pinned by digest; Dependabot proposes new digests weekly
+FROM python:3.15-slim@sha256:f48fda6d59b2b3437781d1c3ccf4aa0e26ae871de3cdd758b49ab45ee7291619
 
 # Set to the tag by GitHub Actions on release (e.g. v0.1.0)
 ARG VERSION=dev

@@ -83,7 +83,9 @@ Fill in `IMAP_HOST` and `IMAP_USER` in `.env` and describe your own mail server 
 (`docker compose logs mailreports`). The first reports arrive within a day. To update: `docker compose pull && docker compose up -d`.
 
 For use over the internet, put it behind a reverse proxy with a login; see
-[Installation](docs/en/installation.md).
+[Installation](docs/en/installation.md). Reports are not signed and the report address is
+public, so anybody can send made-up reports to it: set `DOMAINS` to your domains so reports
+for other domains are not stored.
 
 ## Documentation
 

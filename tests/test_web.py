@@ -103,3 +103,25 @@ def test_language_redirect_stays_on_host(client):
     assert r.headers["location"] == "/reports?days=7"
     r = client.get("/lang/de", headers={"referer": "https://evil.test/x"}, follow_redirects=False)
     assert r.headers["location"] == "/"
+
+
+def test_client_ip_behind_trusted_proxy(tmp_path):
+    """Sign-in limits and the sign-in log need the visitor's address, not the proxy's."""
+    import ipaddress as _ip
+    from types import SimpleNamespace
+
+    from mailreports import web
+    settings = SimpleNamespace(trusted_proxies=[_ip.ip_network("172.20.1.1/32")])
+    app = SimpleNamespace(state=SimpleNamespace(svc=SimpleNamespace(settings=settings)))
+
+    def req(peer, xff=""):
+        return SimpleNamespace(client=SimpleNamespace(host=peer), app=app,
+                               headers={"x-forwarded-for": xff} if xff else {})
+    assert web.client_ip(req("172.20.1.1", "203.0.113.7")) == "203.0.113.7"
+    # a forged first entry is ignored, the proxy appends the real address at the end
+    assert web.client_ip(req("172.20.1.1", "198.51.100.1, 203.0.113.7")) == "203.0.113.7"
+    # from an untrusted peer the header counts for nothing
+    assert web.client_ip(req("198.51.100.9", "203.0.113.7")) == "198.51.100.9"
+    assert web.client_ip(req("172.20.1.1", "garbage")) == "172.20.1.1"
+    settings.trusted_proxies = []
+    assert web.client_ip(req("172.20.1.1", "203.0.113.7")) == "172.20.1.1"

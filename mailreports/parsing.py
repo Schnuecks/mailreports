@@ -22,8 +22,9 @@ from email.message import EmailMessage
 
 from defusedxml import ElementTree
 
-MAX_UNPACKED = 50 * 1024 * 1024    # protection against zip/gzip bombs
+MAX_UNPACKED = 50 * 1024 * 1024    # unpacked bytes per mail (or uploaded file), against zip/gzip bombs
 MAX_NESTING = 3
+MAX_MEMBERS = 20                    # files per zip archive; real reports have one
 
 
 class ReportError(ValueError):
@@ -103,53 +104,65 @@ class TlsReport:
 
 # ---------------------------------------------------------------- unpacking
 
-def _gunzip(data: bytes) -> bytes:
+class Budget:
+    """Unpacked bytes still allowed. Shared by all attachments of one mail, so many small
+    archives cannot add up to more than MAX_UNPACKED."""
+
+    def __init__(self, limit: int | None = None):
+        self.remaining = MAX_UNPACKED if limit is None else limit
+
+    def take(self, n: int) -> None:
+        self.remaining -= n
+        if self.remaining < 0:
+            raise ReportError("unpacked content too large")
+
+
+def _gunzip(data: bytes, budget: Budget) -> bytes:
     stream = gzip.GzipFile(fileobj=io.BytesIO(data))
     try:
-        out = stream.read(MAX_UNPACKED + 1)
+        out = stream.read(budget.remaining + 1)
     except (OSError, EOFError, zlib.error) as exc:
         raise ReportError(f"broken gzip data: {exc}") from exc
-    if len(out) > MAX_UNPACKED:
-        raise ReportError("gzip content too large")
+    budget.take(len(out))
     return out
 
 
-def _unzip(data: bytes) -> list[Payload]:
+def _unzip(data: bytes, budget: Budget) -> list[Payload]:
     try:
         archive = zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile as exc:
         raise ReportError(f"broken zip archive: {exc}") from exc
-    out, total = [], 0
-    for info in archive.infolist():
-        if info.is_dir():
-            continue
-        total += info.file_size
-        if total > MAX_UNPACKED:
-            raise ReportError("zip content too large")
+    members = [info for info in archive.infolist() if not info.is_dir()]
+    if len(members) > MAX_MEMBERS:
+        raise ReportError(f"zip archive with {len(members)} files")
+    if sum(info.file_size for info in members) > budget.remaining:
+        raise ReportError("unpacked content too large")
+    out = []
+    for info in members:
         try:
             with archive.open(info) as member:
-                content = member.read(MAX_UNPACKED + 1)
+                content = member.read(budget.remaining + 1)
         except (zipfile.BadZipFile, RuntimeError, OSError, zlib.error) as exc:
             raise ReportError(f"broken zip member {info.filename}: {exc}") from exc
-        if len(content) > MAX_UNPACKED:
-            raise ReportError("zip content too large")
+        budget.take(len(content))
         out.append(Payload(info.filename, content))
     return out
 
 
-def unpack(payload: Payload, depth: int = 0) -> list[Payload]:
+def unpack(payload: Payload, depth: int = 0, budget: Budget | None = None) -> list[Payload]:
     """Decompress until plain XML or JSON remains."""
+    budget = budget or Budget()
     data = payload.data
     if depth > MAX_NESTING:
         raise ReportError("too deeply nested archive")
     if data[:4] == b"PK\x03\x04":
         result = []
-        for member in _unzip(data):
-            result.extend(unpack(member, depth + 1))
+        for member in _unzip(data, budget):
+            result.extend(unpack(member, depth + 1, budget))
         return result
     if data[:2] == b"\x1f\x8b":
         name = payload.name[:-3] if payload.name.lower().endswith(".gz") else payload.name
-        return unpack(Payload(name, _gunzip(data)), depth + 1)
+        return unpack(Payload(name, _gunzip(data, budget)), depth + 1, budget)
     return [payload]
 
 

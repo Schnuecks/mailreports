@@ -12,6 +12,9 @@ class FakeIMAP:
         self.folders = {"INBOX": dict(messages)}
         self.flags: dict[bytes, set] = {}
         self.calls = []
+        self.sizes: dict[bytes, int] = {}
+        self.downloaded: list[bytes] = []
+        self.crash: set[bytes] = set()
 
     def select(self, folder, readonly=False):
         name = folder.strip('"')
@@ -30,14 +33,23 @@ class FakeIMAP:
         if cmd == "SEARCH":
             uids = [u for u in inbox if not self.flags.get(u, set()) & {fetch.KW_DONE, fetch.KW_ERROR}]
             return "OK", [b" ".join(uids)]
+        if cmd == "FETCH" and args[1] == "(RFC822.SIZE)":
+            size = str(self.sizes.get(args[0], len(inbox[args[0]]))).encode()
+            return "OK", [b"1 (UID " + args[0] + b" RFC822.SIZE " + size + b")"]
         if cmd == "FETCH":
+            self.downloaded.append(args[0])
+            if args[0] in self.crash:
+                raise MemoryError("boom")
             return "OK", [(b"1 (BODY[] {n}", inbox[args[0]]), b")"]
         if cmd == "MOVE":
             self.folders[args[1].strip('"')][args[0]] = inbox.pop(args[0])
             return "OK", [b""]
         if cmd == "STORE":
             for flag in args[2].strip("()").split():
-                self.flags.setdefault(args[0], set()).add(flag)
+                if args[1].startswith("-"):
+                    self.flags.setdefault(args[0], set()).discard(flag)
+                else:
+                    self.flags.setdefault(args[0], set()).add(flag)
             return "OK", [b""]
         raise AssertionError(cmd)
 
@@ -62,6 +74,7 @@ def test_fetch_flags_mails(service, monkeypatch):
     assert result.mails == 3
     assert len(result.outcome.new_dmarc) == 1 and len(result.outcome.new_tls) == 1
     assert fetch.KW_DONE in fake.flags[b"1"] and r"\Seen" in fake.flags[b"1"]
+    assert fetch.KW_ERROR not in fake.flags[b"1"]
     assert fetch.KW_ERROR in fake.flags[b"3"]
     # second run: nothing left to do
     assert service.run_once().mails == 0
@@ -109,3 +122,30 @@ def test_readonly_changes_nothing(tmp_path, monkeypatch):
     fake.folders["INBOX"][b"3"] = mail(("t.json", TLS_JSON, "application/json"))
     third = svc.run_once()
     assert third.mails == 1 and len(third.outcome.new_tls) == 1
+
+
+def test_large_and_crashing_mails_are_not_retried(service, monkeypatch):
+    fake = FakeIMAP({b"1": mail(("r.xml.gz", gz(DMARC_XML), "application/gzip")), b"2": mail(), b"3": mail()})
+    fake.sizes[b"2"] = fetch.MAX_MAIL + 1
+    fake.crash.add(b"3")
+    monkeypatch.setattr(fetch, "connect", lambda s: fake)
+    service.settings.imap_host, service.settings.imap_user = "imap.test", "u"
+    with pytest.raises(MemoryError):          # the process dies while handling mail 3
+        service.run_once()
+    assert b"2" not in fake.downloaded         # too large: never downloaded
+    assert fetch.KW_ERROR in fake.flags[b"2"] and fetch.KW_ERROR in fake.flags[b"3"]
+    assert fetch.KW_DONE in fake.flags[b"1"]
+    assert service.run_once().mails == 0       # the crashing mail is not tried again
+
+
+def test_processing_error_marks_mail(service, monkeypatch):
+    fake = FakeIMAP({b"1": mail(("r.xml", DMARC_XML, "text/xml"))})
+    monkeypatch.setattr(fetch, "connect", lambda s: fake)
+
+    def broken(db, raw, domains=None):
+        raise RuntimeError("unexpected")
+    monkeypatch.setattr(fetch, "ingest_mail", broken)
+    service.settings.imap_host, service.settings.imap_user = "imap.test", "u"
+    result = service.run_once()
+    assert result.error == "" and result.mails == 1
+    assert fetch.KW_ERROR in fake.flags[b"1"] and fetch.KW_DONE not in fake.flags[b"1"]
