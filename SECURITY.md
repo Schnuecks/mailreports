@@ -30,10 +30,13 @@ files are therefore treated as untrusted input:
 
 Access:
 
-- The app has no user accounts. Protect it with a login proxy and `AUTH_HEADER`; set
-  `TRUSTED_PROXIES` to the proxy's own address (not the whole Docker network) and do not
-  publish the port, otherwise clients or other containers could send the header themselves.
-- Form posts are only accepted from the same site (`Sec-Fetch-Site`).
+- The app does not start without a sign-in: a password (`ADMIN_PASSWORD`, plain or as an
+  Argon2 hash, signed HttpOnly session cookie, failed attempts limited per address) or a
+  login proxy with `AUTH_HEADER`. The header is only trusted together with
+  `TRUSTED_PROXIES` (the app refuses to start without it);
+  set it to the proxy's own address, not the whole Docker network, and do not publish the
+  port, otherwise other containers could send the header themselves.
+- Form posts are only accepted from the same site (`Sec-Fetch-Site`, otherwise `Origin`).
 - Credentials (IMAP, Pushover) can be read from files (`*_FILE`). They are never logged or
   shown on the pages.
 - The container runs as an unprivileged user and works with a read-only file system and

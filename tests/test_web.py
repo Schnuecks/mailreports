@@ -59,11 +59,23 @@ def test_upload(client, service):
 
 def test_cross_site_post_refused(client):
     assert client.post("/fetch", headers={"sec-fetch-site": "cross-site"}).status_code == 403
+    assert client.post("/fetch", headers={"origin": "https://evil.test"}).status_code == 403
+    r = client.post("/fetch", headers={"origin": "http://testserver"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_auth_header_needs_trusted_proxies(tmp_path):
+    with pytest.raises(SystemExit, match="TRUSTED_PROXIES"):
+        Service(make_settings(tmp_path, auth_header="Remote-User"))
 
 
 def test_auth_header(tmp_path):
-    svc = Service(make_settings(tmp_path, auth_header="Remote-User", allowed_groups=["admins"]))
-    with TestClient(create_app(svc)) as c:
+    import ipaddress
+    svc = Service(make_settings(tmp_path, auth_header="Remote-User", allowed_groups=["admins"],
+                                trusted_proxies=[ipaddress.ip_network("10.0.0.1/32")]))
+    with TestClient(create_app(svc), client=("10.0.0.2", 5000)) as c:
+        assert c.get("/", headers={"Remote-User": "a", "Remote-Groups": "admins"}).status_code == 403
+    with TestClient(create_app(svc), client=("10.0.0.1", 5000)) as c:
         assert c.get("/").status_code == 401
         assert c.get("/", headers={"Remote-User": "a", "Remote-Groups": "users"}).status_code == 403
         r = c.get("/", headers={"Remote-User": "a", "Remote-Groups": "users,admins", "Remote-Name": "Andrea"})
@@ -91,3 +103,49 @@ def test_language_redirect_stays_on_host(client):
     assert r.headers["location"] == "/reports?days=7"
     r = client.get("/lang/de", headers={"referer": "https://evil.test/x"}, follow_redirects=False)
     assert r.headers["location"] == "/"
+
+
+def test_no_sign_in_configured_refuses_start(tmp_path):
+    with pytest.raises(SystemExit, match="ADMIN_PASSWORD"):
+        Service(make_settings(tmp_path, auth_disabled=False))
+
+
+@pytest.mark.parametrize("configured", ["correct horse battery", "argon2"])
+def test_password_login(tmp_path, configured):
+    from mailreports import auth
+    password = "correct horse battery"
+    stored = auth.hash_password(password) if configured == "argon2" else password
+    svc = Service(make_settings(tmp_path, auth_disabled=False, admin_password=stored))
+    with TestClient(create_app(svc)) as c:
+        r = c.get("/reports?days=7", follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"] == "/login?next=/reports%3Fdays%3D7"
+        assert c.post("/fetch", follow_redirects=False).status_code == 401
+        assert c.get("/healthz").status_code == 200
+        assert c.get("/static/style.css").status_code == 200
+        assert c.post("/login", data={"password": "wrong", "next": "/"}).status_code == 401
+        r = c.post("/login", data={"password": password, "next": "/reports?days=7"}, follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"] == "/reports?days=7"
+        assert c.get("/").status_code == 200
+        c.post("/logout")
+        assert c.get("/", follow_redirects=False).status_code == 303
+
+
+def test_login_rate_limit_and_safe_redirect(tmp_path):
+    svc = Service(make_settings(tmp_path, auth_disabled=False, admin_password="correct horse battery"))
+    with TestClient(create_app(svc)) as c:
+        r = c.post("/login", data={"password": "correct horse battery", "next": "//evil.test/"},
+                   follow_redirects=False)
+        assert r.headers["location"] == "/"
+        c.post("/logout")
+        for _ in range(5):
+            c.post("/login", data={"password": "nope"})
+        assert c.post("/login", data={"password": "correct horse battery"}).status_code == 429
+
+
+def test_session_cookie_is_signed(tmp_path):
+    from mailreports import auth
+    s = auth.Sessions(b"k" * 32, "pw")
+    token = s.create()
+    assert s.valid(token)
+    assert not s.valid(token[:-2] + "xx")
+    assert not auth.Sessions(b"k" * 32, "other").valid(token)   # new password signs everybody out

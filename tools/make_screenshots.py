@@ -43,7 +43,7 @@ def main() -> None:
     subprocess.run([sys.executable, str(ROOT / "tools" / "make_demo.py"), str(tmp / "files"), "--days", "60"],
                    check=True)
     svc = Service(Settings(data_dir=tmp / "data", sources_file=str(tmp / "files" / "sources.toml"),
-                           dns_lookups=False, background_tasks=False, default_language="en",
+                           dns_lookups=False, background_tasks=False, default_language="en", auth_disabled=True,
                            timezone="Europe/Berlin"))
     total = Outcome()
     for f in sorted((tmp / "files").glob("*.gz")):

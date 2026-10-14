@@ -24,6 +24,7 @@ curl -O https://raw.githubusercontent.com/Schnuecks/mailreports/main/compose.yam
 curl -o .env https://raw.githubusercontent.com/Schnuecks/mailreports/main/.env.example
 curl -o sources.toml https://raw.githubusercontent.com/Schnuecks/mailreports/main/sources.example.toml
 mkdir secrets && printf '%s' 'dein-imap-passwort' > secrets/imap_password.txt
+printf '%s' 'ein-langes-passwort-fuer-die-seite' > secrets/admin_password.txt
 ```
 
 In `.env` `IMAP_HOST` und `IMAP_USER` eintragen, in `sources.toml` den eigenen Mailserver
@@ -42,8 +43,9 @@ für ihn beschreibbar sein: `sudo chown 10001 data`.
 
 ## 3. Hinter einem Reverse-Proxy mit Anmeldung
 
-mailreports hat keine eigene Benutzerverwaltung. Es gehört hinter einen Reverse-Proxy mit
-Anmeldung (Forward-Auth); die App prüft den Header, den der Proxy setzt:
+Ohne Proxy schützt das Passwort aus `ADMIN_PASSWORD_FILE` die Seite. Hast du schon einen
+Reverse-Proxy mit Anmeldung (Forward-Auth), kann mailreports stattdessen ihn nutzen und den
+Header prüfen, den der Proxy setzt:
 
 ```
 AUTH_HEADER=Remote-User        # Anfragen ohne diesen Header werden abgewiesen (401)
@@ -54,12 +56,13 @@ TRUSTED_PROXIES=172.20.0.5     # nur Anfragen vom Proxy selbst annehmen
 Dem Header kann man nur trauen, wenn sonst niemand den Container erreicht: keinen Port
 veröffentlichen und `TRUSTED_PROXIES` **so eng wie möglich setzen – auf die Adresse des
 Proxys, nicht auf das ganze Docker-Netz.** Sonst könnte jeder Container im vertrauten Netz
-den Anmelde-Header selbst mitschicken. Von welcher Adresse die Anfragen wirklich kommen, steht
-im Container-Log (`docker compose logs mailreports` zeigt bei jeder Anfrage die Absenderadresse):
-bei einem Proxy-Container ist es seine IP im gemeinsamen Netz, bei einem Proxy mit
-`network_mode: host` das Gateway dieses Netzes (z. B. `172.20.0.1`). mailreports warnt beim
-Start im Log, wenn ein ganzes Netz als vertrauenswürdig eingetragen ist. `compose.traefik.yml`
-zeigt ein vollständiges Beispiel. Der angezeigte Name kommt aus `Remote-Name`, falls gesetzt.
+den Anmelde-Header selbst mitschicken. Von welcher Adresse die Anfragen wirklich kommen,
+steht im Container-Log (`docker compose logs mailreports` zeigt bei jeder Anfrage die
+Absenderadresse): bei einem Proxy-Container ist es seine IP im gemeinsamen Netz, bei einem
+Proxy mit `network_mode: host` das Gateway dieses Netzes (z. B. `172.20.0.1`). `AUTH_HEADER`
+ohne `TRUSTED_PROXIES` verweigert mailreports beim Start, ein ganzes vertrautes Netz führt
+zu einer Warnung im Log. `compose.traefik.yml` zeigt ein vollständiges Beispiel. Der
+angezeigte Name kommt aus `Remote-Name`, falls gesetzt.
 
 ## 4. GeoIP (optional)
 

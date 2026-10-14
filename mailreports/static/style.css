@@ -90,7 +90,7 @@ small, .small { font-size: .85em; }
 .main-nav a { color: var(--text); text-decoration: none; padding: .35rem .7rem; border-radius: 10px; white-space: nowrap; }
 .main-nav a:hover { background: var(--card); color: var(--text); }
 .main-nav a[aria-current] { background: var(--btn); color: var(--btn-text); }
-.top-right { display: flex; align-items: center; gap: .75rem; font-size: .85rem; color: var(--muted); }
+.top-right { margin-left: auto; display: flex; align-items: center; gap: .75rem; font-size: .85rem; color: var(--muted); }
 .langs a { color: var(--muted); text-decoration: none; padding: 0 .2rem; }
 .langs a[aria-current] { color: var(--text); font-weight: 700; }
 
@@ -247,3 +247,9 @@ select, input[type=file] { font: inherit; color: var(--text); background: var(--
   dl.kv dt { margin-top: .4rem; }
 }
 .foot a { color: var(--muted); }
+.linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); cursor: pointer; }
+.linklike:hover { color: var(--btn-hover); }
+.card.login { max-width: 380px; margin: 3rem auto; }
+.login form { display: flex; flex-direction: column; gap: .6rem; }
+.login label { font-size: .85rem; color: var(--muted); }
+input[type=password] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; }

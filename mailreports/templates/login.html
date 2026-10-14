@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Anmelden") }}{% endblock %}
+{% block content %}
+<section class="card login">
+  <h1>{{ _("Anmelden") }}</h1>
+  {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="password">{{ _("Passwort") }}</label>
+    <input id="password" type="password" name="password" autocomplete="current-password" required autofocus>
+    <button class="btn">{{ _("Anmelden") }}</button>
+  </form>
+</section>
+{% endblock %}

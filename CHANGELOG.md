@@ -2,6 +2,21 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.1.2
+
+These changes were meant for 0.1.1 but did not make it into that release.
+
+- **Sign-in required:** without a login proxy, the page is protected by a password
+  (`ADMIN_PASSWORD` or `ADMIN_PASSWORD_FILE`, plain or as an Argon2 hash from
+  `python -m mailreports hash-password`), with a signed session cookie and a limit on failed
+  attempts. Without a password or `AUTH_HEADER` the app refuses to start; `AUTH_DISABLED=true`
+  turns sign-in off for local tests. **When updating without a login proxy, set
+  `ADMIN_PASSWORD_FILE` first.**
+- `AUTH_HEADER` now requires `TRUSTED_PROXIES`; without it mailreports refuses to start,
+  because anyone reaching the port could otherwise send the login header
+- Form posts are also checked against the `Origin` header for browsers without
+  `Sec-Fetch-Site`
+
 ## 0.1.1
 
 - Corrected wording and translations: "Im Klartext", consistent capitalisation of column
