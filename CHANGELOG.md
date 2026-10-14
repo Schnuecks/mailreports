@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.4.3
+
+- Phone layout of the settings: tabs in one line with short labels, short fields side by side
+- The file selection for uploads no longer sticks out of its card on phones
+
 ## 0.4.2
 
 - **Users** and the **sign-in log** moved into **Settings** as tabs next to the notifications;
