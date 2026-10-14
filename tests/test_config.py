@@ -26,3 +26,15 @@ def test_missing_file_is_a_clear_error(monkeypatch):
 def test_starttls_default_port(monkeypatch):
     monkeypatch.setenv("IMAP_SECURITY", "starttls")
     assert config.load().imap_port == 143
+
+
+def test_warns_about_wide_trusted_network(tmp_path, caplog):
+    import ipaddress
+
+    from mailreports.service import Service
+    from tests.conftest import make_settings
+    Service(make_settings(tmp_path, trusted_proxies=[ipaddress.ip_network("172.20.1.0/24")]))
+    assert "whole network 172.20.1.0/24" in caplog.text
+    caplog.clear()
+    Service(make_settings(tmp_path, trusted_proxies=[ipaddress.ip_network("172.20.1.1/32")]))
+    assert "whole network" not in caplog.text

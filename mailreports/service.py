@@ -20,6 +20,10 @@ class Service:
         self.db = Database(self.settings.db_path)
         self.sources = load_sources(self.settings.sources_file)
         self.geo = enrich.GeoIP(self.settings)
+        for net in self.settings.trusted_proxies:
+            if net.num_addresses > 1:
+                log.warning("TRUSTED_PROXIES contains the whole network %s: every host in it can send the "
+                            "login header. Prefer the proxy's single address.", net)
         self._run_lock = threading.Lock()
         self._wake = threading.Event()
         self._stop = threading.Event()

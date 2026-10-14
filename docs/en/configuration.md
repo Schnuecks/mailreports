@@ -51,7 +51,7 @@ A finding is identified by domain and IP (or domain and TLS failure type).
 |---|---|---|
 | `AUTH_HEADER` | – | Header with the user name set by the login proxy, e.g. `Remote-User`. If set, requests without it get 401. |
 | `ALLOWED_GROUPS` | – | Comma-separated; at least one must appear in `Remote-Groups` |
-| `TRUSTED_PROXIES` | – | Comma-separated addresses or networks; requests from anywhere else get 403 |
+| `TRUSTED_PROXIES` | – | Comma-separated addresses or networks; requests from anywhere else get 403. Use the proxy's single address, not the whole network (see [Installation](installation.md#3-behind-a-reverse-proxy-with-login)). |
 
 `/healthz` is always reachable for the container health check.
 

@@ -2,6 +2,13 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- Warning in the log at start when `TRUSTED_PROXIES` contains a whole network instead of
+  single addresses
+- Docs and `compose.traefik.yml`: set `TRUSTED_PROXIES` to the proxy's own address (the
+  gateway for a proxy with `network_mode: host`), not to the whole Docker network
+
 ## 0.1.0
 
 First version.

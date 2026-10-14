@@ -31,8 +31,8 @@ files are therefore treated as untrusted input:
 Access:
 
 - The app has no user accounts. Protect it with a login proxy and `AUTH_HEADER`; set
-  `TRUSTED_PROXIES` to the proxy network and do not publish the port, otherwise clients
-  could send the header themselves.
+  `TRUSTED_PROXIES` to the proxy's own address (not the whole Docker network) and do not
+  publish the port, otherwise clients or other containers could send the header themselves.
 - Form posts are only accepted from the same site (`Sec-Fetch-Site`).
 - Credentials (IMAP, Pushover) can be read from files (`*_FILE`). They are never logged or
   shown on the pages.
