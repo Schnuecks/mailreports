@@ -43,7 +43,8 @@ XML and result codes.
   Emails are flagged or moved, never deleted, or left completely untouched in read-only mode.
   Duplicate reports are recognised.
 - **Notifications** via Pushover, ntfy, webhook or email for new failures, unknown senders and
-  TLS problems, at most once a day per finding, plus an optional **weekly summary**
+  TLS problems, at most once a day per finding, plus an optional **weekly summary** – set up in
+  the app or with environment variables
 - **Key figures** as JSON and in the Prometheus format for dashboards
 - **Retention:** reports older than a set number of days are deleted automatically
 - **User accounts** with administrator and read-only roles, **two-factor sign-in** with an

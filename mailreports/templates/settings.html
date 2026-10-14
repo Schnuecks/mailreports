@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Einstellungen") }}{% endblock %}
+{% macro value_of(name) -%}
+  {%- if name in values %}{{ values[name] }}{% else %}{% set v = s[name] %}{{ v|join(", ") if v is not string and v is iterable else v }}{% endif -%}
+{%- endmacro %}
+{% macro field(name, label, type="text", hint="", placeholder="") -%}
+  <div class="field{% if error_field == name %} invalid{% endif %}">
+    <label for="f_{{ name }}">{{ label }}</label>
+    {% if name in given %}
+      <input id="f_{{ name }}" type="{{ 'password' if name in secrets else type }}" value="{{ '' if name in secrets else value_of(name) }}" disabled
+             placeholder="{{ _('Festgelegt über {var}', var=env_names[name]) if name in secrets else '' }}">
+      <small class="muted">{{ _("Festgelegt über {var}", var=env_names[name]) }}</small>
+    {% elif name in secrets %}
+      <input id="f_{{ name }}" type="password" name="{{ name }}" autocomplete="off" {% if error_field == name %}aria-invalid="true"{% endif %}
+             placeholder="{{ _('gespeichert – leer lassen, um es zu behalten') if stored.get(name) else placeholder }}">
+      {% if stored.get(name) %}<label class="check"><input type="checkbox" name="clear_{{ name }}" value="1"> {{ _("entfernen") }}</label>{% endif %}
+    {% else %}
+      <input id="f_{{ name }}" type="{{ type }}" name="{{ name }}" value="{{ value_of(name) }}" placeholder="{{ placeholder }}" {% if error_field == name %}aria-invalid="true"{% endif %}>
+    {% endif %}
+    {% if hint %}<small class="muted">{{ hint }}</small>{% endif %}
+  </div>
+{%- endmacro %}
+{% macro select(name, label, options) -%}
+  {% set current = values[name] if name in values else s[name]|string %}
+  <div class="field{% if error_field == name %} invalid{% endif %}">
+    <label for="f_{{ name }}">{{ label }}</label>
+    <select id="f_{{ name }}" name="{{ name }}" {% if name in given %}disabled{% endif %} {% if error_field == name %}aria-invalid="true"{% endif %}>
+      {% for key, text in options %}<option value="{{ key }}" {% if key|string == current %}selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+    {% if name in given %}<small class="muted">{{ _("Festgelegt über {var}", var=env_names[name]) }}</small>{% endif %}
+  </div>
+{%- endmacro %}
+{% block content %}
+<div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
+{% if saved %}<div class="notice ok" role="status">{{ _("Gespeichert.") }}</div>{% endif %}
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+{% if results %}
+<div class="notice {{ 'bad' if results|selectattr(1)|list else 'ok' }}" role="status">
+  {{ _("Testnachricht gesendet:") }}
+  <ul class="plain-list">{% for name, err in results %}<li>{{ _("E-Mail") if name == "E-Mail" else name }}: {% if err %}<span class="bad-text">{{ err }}</span>{% else %}{{ _("zugestellt") }}{% endif %}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% if unreadable %}<div class="notice bad">{{ _("Gespeicherte Zugangsdaten lassen sich nicht entschlüsseln (SECRET_KEY fehlt oder wurde geändert). Bitte neu eingeben: {fields}", fields=unreadable|join(", ")) }}</div>{% endif %}
+
+<p class="muted">{{ _("Benachrichtigungen melden neue DMARC-Fehlschläge, unbekannte Absender und TLS-Probleme. Ein Kanal ist aktiv, sobald seine Felder ausgefüllt sind; Meldungen gehen an alle aktiven Kanäle. Werte aus Umgebungsvariablen haben Vorrang und lassen sich hier nicht ändern.") }}</p>
+{% if not encrypted %}<div class="notice">{{ _("SECRET_KEY ist nicht gesetzt: Tokens und Passwörter werden unverschlüsselt in der Datenbank gespeichert.") }}</div>{% endif %}
+
+<form method="post" action="/settings" class="settings-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="grid two">
+    <section class="card">
+      <h2>Pushover</h2>
+      <div class="stack-fields">
+        {{ field("pushover_token", _("API-Token der Anwendung")) }}
+        {{ field("pushover_user", _("Benutzer- oder Gruppenschlüssel")) }}
+      </div>
+    </section>
+    <section class="card">
+      <h2>ntfy</h2>
+      <div class="stack-fields">
+        {{ field("ntfy_url", _("Adresse des Themas"), "url", placeholder="https://ntfy.sh/topic") }}
+        {{ field("ntfy_token", _("Zugriffstoken (optional)")) }}
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{ _("Webhook") }}</h2>
+      <div class="stack-fields">
+        {{ field("webhook_url", _("Adresse"), hint=_("Erhält jede Meldung als JSON (title, message, url) per POST."), placeholder="https://") }}
+      </div>
+    </section>
+  </div>
+  <section class="card">
+    <h2>{{ _("E-Mail") }}</h2>
+    <div class="grid-fields">
+      {{ field("smtp_host", _("SMTP-Server"), placeholder="smtp.example.org") }}
+      {{ select("smtp_security", _("Verschlüsselung"), [("starttls", "STARTTLS"), ("ssl", "SSL/TLS"), ("none", _("keine"))]) }}
+      {{ field("smtp_port", _("Port"), "number") }}
+      {{ field("smtp_user", _("Benutzername (optional)")) }}
+      {{ field("smtp_password", _("Passwort")) }}
+      {{ field("smtp_from", _("Absenderadresse"), "email", placeholder="mailreports@example.org") }}
+      {{ field("notify_email", _("Empfänger"), hint=_("Mehrere Adressen mit Komma trennen."), placeholder="admin@example.org") }}
+    </div>
+  </section>
+  <section class="card">
+    <h2>{{ _("Zeitplan") }}</h2>
+    <div class="grid-fields">
+      {{ field("notify_cooldown_hours", _("Dieselbe Auffälligkeit höchstens alle … Stunden melden"), "number") }}
+      {{ select("digest", _("Wochenübersicht"), [("off", _("aus")), ("weekly", _("wöchentlich"))]) }}
+      {{ select("digest_weekday", _("Wochentag der Übersicht"), [(0, _("Montag")), (1, _("Dienstag")), (2, _("Mittwoch")), (3, _("Donnerstag")), (4, _("Freitag")), (5, _("Samstag")), (6, _("Sonntag"))]) }}
+    </div>
+  </section>
+  <div class="actions-row">
+    <button class="btn" name="action" value="save">{{ _("Speichern") }}</button>
+    <button class="btn ghost" name="action" value="test">{{ _("Speichern und Testnachricht senden") }}</button>
+  </div>
+</form>
+{% endblock %}

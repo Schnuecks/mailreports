@@ -124,6 +124,7 @@ class Settings:
     source_url: str = "https://github.com/Schnuecks/mailreports"
     timezone: str = "UTC"
     background_tasks: bool = True
+    env_given: frozenset = frozenset()   # notification fields set in the environment (fixed in the app)
 
     @property
     def db_path(self) -> Path:
@@ -163,6 +164,21 @@ def _weekday(value: str) -> int:
     if value not in WEEKDAYS:
         raise SystemExit("DIGEST_WEEKDAY must be one of mon, tue, wed, thu, fri, sat, sun")
     return WEEKDAYS.index(value)
+
+
+# Notification settings that can also be changed on the settings page (field -> variable)
+NOTIFY_VARS = {
+    "pushover_token": "PUSHOVER_TOKEN", "pushover_user": "PUSHOVER_USER",
+    "ntfy_url": "NTFY_URL", "ntfy_token": "NTFY_TOKEN", "webhook_url": "WEBHOOK_URL",
+    "smtp_host": "SMTP_HOST", "smtp_port": "SMTP_PORT", "smtp_security": "SMTP_SECURITY",
+    "smtp_user": "SMTP_USER", "smtp_password": "SMTP_PASSWORD", "smtp_from": "SMTP_FROM",
+    "notify_email": "NOTIFY_EMAIL", "digest": "DIGEST", "digest_weekday": "DIGEST_WEEKDAY",
+    "notify_cooldown_hours": "NOTIFY_COOLDOWN_HOURS",
+}
+
+
+def _given(name: str) -> bool:
+    return bool(os.environ.get(f"{name}_FILE", "").strip() or os.environ.get(name, "").strip())
 
 
 def load() -> Settings:
@@ -228,4 +244,5 @@ def load() -> Settings:
         source_url=env("SOURCE_URL", "https://github.com/Schnuecks/mailreports"),
         timezone=env("TZ", "UTC") or "UTC",
         background_tasks=env_bool("BACKGROUND_TASKS", True),
+        env_given=frozenset(f for f, var in NOTIFY_VARS.items() if _given(var)),
     )

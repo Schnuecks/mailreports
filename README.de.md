@@ -45,7 +45,7 @@ haben – statt XML und Fehlercodes.
   angefasst. Doppelte Berichte werden erkannt.
 - **Benachrichtigungen** über Pushover, ntfy, Webhook oder E-Mail bei neuen Fehlschlägen,
   unbekannten Absendern und TLS-Problemen, höchstens einmal am Tag pro Fund, dazu optional eine
-  **Wochenübersicht**
+  **Wochenübersicht** – einzurichten in der App oder über Umgebungsvariablen
 - **Kennzahlen** als JSON und im Prometheus-Format für Dashboards
 - **Aufbewahrung:** Berichte, die älter als eine einstellbare Zahl von Tagen sind, werden
   automatisch gelöscht

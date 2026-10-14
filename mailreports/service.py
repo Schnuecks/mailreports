@@ -8,7 +8,7 @@ import threading
 import time
 from datetime import datetime
 
-from . import accounts, config, enrich, fetch, notify, secretbox, web
+from . import accounts, config, enrich, fetch, notify, notifyconfig, secretbox, web
 from .db import Database
 from .ingest import Outcome
 from .sources import load_sources
@@ -65,6 +65,10 @@ class Service:
             code = accounts.setup_code(con)
         log.warning("No account yet. Open the page and create the first one with the setup code %s", code)
 
+    def notify_settings(self) -> config.Settings:
+        """Settings including the notification channels from the settings page."""
+        return notifyconfig.effective(self.settings, self.db)
+
     # ------------------------------------------------------------ one run
 
     def after_import(self, outcome: Outcome) -> None:
@@ -74,7 +78,7 @@ class Service:
         except Exception:  # enrichment is optional, never block storing reports
             log.exception("IP enrichment failed")
         if outcome.new_dmarc or outcome.new_tls:
-            notify.notify(self.db, self.settings, self.sources, outcome.new_dmarc, outcome.new_tls)
+            notify.notify(self.db, self.notify_settings(), self.sources, outcome.new_dmarc, outcome.new_tls)
 
     def run_once(self) -> fetch.FetchResult | None:
         if not self.settings.imap_enabled:
@@ -104,7 +108,7 @@ class Service:
     def periodic(self) -> None:
         """Daily jobs: deleting old data; the weekly summary."""
         now = int(time.time())
-        s = self.settings
+        s = self.notify_settings()
         if s.digest == "weekly" and s.notify_enabled:
             local = datetime.fromtimestamp(now, web.zone(s.timezone))
             week = local.strftime("%G-W%V")
