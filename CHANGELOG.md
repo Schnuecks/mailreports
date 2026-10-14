@@ -21,6 +21,7 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
   `METRICS_TOKEN`
 - **Six languages:** French, Spanish, Italian and Dutch added
 - The background job now runs without IMAP as well (housekeeping, weekly summary)
+- The help moved from the main menu to a "?" next to the search field and to the footer
 
 ## 0.2.0
 

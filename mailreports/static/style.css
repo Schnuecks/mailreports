@@ -293,3 +293,7 @@ ul.findings li::marker { font-weight: 700; }
 .f-info::marker { content: "i  "; color: var(--muted); }
 .f-warn::marker { content: "!  "; color: var(--warn); }
 .f-bad::marker { content: "✕  "; color: var(--bad); }
+.help-link { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  border: 1px solid var(--line); color: var(--text); text-decoration: none; font-weight: 700; font-size: .85rem; }
+.help-link:hover { border-color: var(--btn-hover); color: var(--btn-hover); }
+.help-link[aria-current] { background: var(--btn); color: var(--btn-text); border-color: transparent; }
