@@ -3,8 +3,8 @@
 {% macro value_of(name) -%}
   {%- if name in values %}{{ values[name] }}{% else %}{% set v = s[name] %}{{ v|join(", ") if v is not string and v is iterable else v }}{% endif -%}
 {%- endmacro %}
-{% macro field(name, label, type="text", hint="", placeholder="") -%}
-  <div class="field{% if error_field == name %} invalid{% endif %}">
+{% macro field(name, label, type="text", hint="", placeholder="", wide=true) -%}
+  <div class="field{% if wide %} wide{% endif %}{% if error_field == name %} invalid{% endif %}">
     <label for="f_{{ name }}">{{ label }}</label>
     {% if name in given %}
       <input id="f_{{ name }}" type="{{ 'password' if name in secrets else type }}" value="{{ '' if name in secrets else value_of(name) }}" disabled
@@ -74,7 +74,7 @@
     <div class="grid-fields">
       {{ field("smtp_host", _("SMTP-Server"), placeholder="smtp.example.org") }}
       {{ select("smtp_security", _("Verschlüsselung"), [("starttls", "STARTTLS"), ("ssl", "SSL/TLS"), ("none", _("keine"))]) }}
-      {{ field("smtp_port", _("Port"), "number") }}
+      {{ field("smtp_port", _("Port"), "number", wide=false) }}
       {{ field("smtp_user", _("Benutzername (optional)")) }}
       {{ field("smtp_password", _("Passwort")) }}
       {{ field("smtp_from", _("Absenderadresse"), "email", placeholder="mailreports@example.org") }}
@@ -86,7 +86,7 @@
     <div class="grid-fields">
       {{ field("notify_cooldown_hours", _("Dieselbe Auffälligkeit höchstens alle … Stunden melden"), "number") }}
       {{ select("digest", _("Wochenübersicht"), [("off", _("aus")), ("weekly", _("wöchentlich"))]) }}
-      {{ select("digest_weekday", _("Wochentag der Übersicht"), [(0, _("Montag")), (1, _("Dienstag")), (2, _("Mittwoch")), (3, _("Donnerstag")), (4, _("Freitag")), (5, _("Samstag")), (6, _("Sonntag"))]) }}
+      {{ select("digest_weekday", _("Wochentag"), [(0, _("Montag")), (1, _("Dienstag")), (2, _("Mittwoch")), (3, _("Donnerstag")), (4, _("Freitag")), (5, _("Samstag")), (6, _("Sonntag"))]) }}
     </div>
   </section>
   <div class="actions-row">

@@ -281,6 +281,7 @@ svg.bars .base { stroke: var(--line); stroke-width: 1; vector-effect: non-scalin
 .filters label.check { flex-direction: row; align-items: center; gap: .4rem; font-size: .9rem; color: var(--text); }
 select, input[type=file] { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: .4rem .6rem; }
 .upload { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.upload input[type=file] { flex: 1 1 14rem; min-width: 0; max-width: 100%; }
 .pager { display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; }
 .notice { padding: .7rem 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--line); }
 .notice.bad { background: var(--bad-bg); }
@@ -385,3 +386,14 @@ ul.findings li::marker { font-weight: 700; }
 .tabs a:hover { color: var(--text); }
 .tabs a[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
 .page-head.sub h2 { margin: 0; }
+.tabs .short { display: none; }
+@media (max-width: 760px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 0; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { white-space: nowrap; padding: .5rem .75rem; }
+  .tabs .long { display: none; }
+  .tabs .short { display: inline; }
+  .grid-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+  .grid-fields > .field.wide { grid-column: 1 / -1; }
+  .grid-fields select, .grid-fields input { min-width: 0; width: 100%; }
+}

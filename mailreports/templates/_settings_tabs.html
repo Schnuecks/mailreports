@@ -1,8 +1,8 @@
 <div class="page-head"><h1>{{ _("Einstellungen") }}</h1></div>
 <nav class="tabs" aria-label="{{ _('Einstellungen') }}">
-  <a href="/settings" {% if nav == 'settings' %}aria-current="page"{% endif %}>{{ _("Benachrichtigungen") }}</a>
+  <a href="/settings" {% if nav == 'settings' %}aria-current="page"{% endif %}><span class="long">{{ _("Benachrichtigungen") }}</span><span class="short" aria-hidden="true">{{ _("Meldungen") }}</span></a>
   {% if accounts_enabled %}
   <a href="/users" {% if nav in ('users', 'user') %}aria-current="page"{% endif %}>{{ _("Benutzer") }}</a>
-  <a href="/sign-ins" {% if nav == 'sign_ins' %}aria-current="page"{% endif %}>{{ _("Anmeldeprotokoll") }}</a>
+  <a href="/sign-ins" {% if nav == 'sign_ins' %}aria-current="page"{% endif %}><span class="long">{{ _("Anmeldeprotokoll") }}</span><span class="short" aria-hidden="true">{{ _("Protokoll") }}</span></a>
   {% endif %}
 </nav>
