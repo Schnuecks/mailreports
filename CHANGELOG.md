@@ -22,6 +22,7 @@ All notable changes are listed here. Versions follow [Semantic Versioning](https
 - **Six languages:** French, Spanish, Italian and Dutch added
 - The background job now runs without IMAP as well (housekeeping, weekly summary)
 - The help moved from the main menu to a "?" next to the search field and to the footer
+- On phones the menu, search, help, account and languages fold into a menu button
 
 ## 0.2.0
 

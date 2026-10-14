@@ -251,6 +251,7 @@
  "MX und DANE": "MX e DANE",
  "Mehrere DMARC-Einträge gefunden; empfangende Server ignorieren dann alle.": "Trovati più record DMARC; in tal caso i server riceventi li ignorano tutti.",
  "Mehrere SPF-Einträge gefunden; das ist ungültig und führt zu einem Fehler bei der Prüfung.": "Trovati più record SPF; ciò non è valido e causa un errore durante la verifica.",
+ "Menü": "Menu",
  "Merkmale": "Caratteristiche",
  "Mit Passkey anmelden": "Accedi con una passkey",
  "Mit Passkey bestätigen": "Conferma con una passkey",

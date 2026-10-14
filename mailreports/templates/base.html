@@ -15,6 +15,10 @@
     <img src="{{ logo_url or '/static/icon.svg' }}" alt="" width="34" height="34">
     <span>{{ app_title or "mailreports" }}</span>
   </a>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="{{ _('Menü') }}">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="menu" id="menu">
   {% if not (accounts_enabled and not account) %}
   <nav class="main-nav" aria-label="{{ _('Hauptmenü') }}">
     <a href="/?days={{ days }}" {% if nav == 'overview' or nav == 'domain' %}aria-current="page"{% endif %}>{{ _("Übersicht") }}</a>
@@ -35,6 +39,7 @@
     <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike">{{ _("Abmelden") }}</button></form>
     {% elif user %}<span class="user" title="{{ _('Angemeldet') }}">{{ user }}</span>{% endif %}
     <span class="langs">{% for code, name in languages.items() %}<a href="/lang/{{ code }}" title="{{ name }}" {% if code == current_language() %}aria-current="true"{% endif %}>{{ code|upper }}</a>{% endfor %}</span>
+  </div>
   </div>
 </header>
 <main>
