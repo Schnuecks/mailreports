@@ -53,7 +53,7 @@ Funde gehen an alle eingerichteten Kanäle.
 | `NOTIFY_COOLDOWN_HOURS` | 24 | Derselbe Fund wird höchstens einmal in dieser Zeit gemeldet |
 | `DIGEST` | `off` | `weekly`: Zusammenfassung der letzten 7 Tage an alle Kanäle |
 | `DIGEST_WEEKDAY` | `mon` | Tag der Zusammenfassung (`mon` … `sun`), versendet ab 8 Uhr Ortszeit |
-| `BASE_URL` | – | Öffentliche Adresse, wird als Link an die Nachrichten gehängt |
+| `BASE_URL` | `PUBLIC_URL` | Öffentliche Adresse, wird als Link an die Nachrichten gehängt; nur nötig, wenn sie von `PUBLIC_URL` abweicht |
 
 Nach einem Abruf geht eine Meldung raus, wenn neue Berichte Mails enthalten, die DMARC
 verfehlt haben (außer erkannten Weiterleitungen), Absender, die bestanden haben, aber nicht
@@ -77,7 +77,7 @@ Abruf starten) oder **Lesezugriff**.
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
-| `PUBLIC_URL` | – | Adresse im Browser, z. B. `https://dmarc.example.org`. Hinter einem Reverse-Proxy nötig für Passkeys und Single Sign-on; das Sitzungs-Cookie gilt dann nur über HTTPS. |
+| `PUBLIC_URL` | – | Adresse im Browser, z. B. `https://dmarc.example.org`. Hinter einem Reverse-Proxy nötig für Passkeys und Single Sign-on; das Sitzungs-Cookie gilt dann nur über HTTPS, und die Adresse dient als Link in Benachrichtigungen. Status- und Kontoseite warnen, wenn sie fehlt oder nicht zur aufgerufenen Adresse passt – bei einem Adresswechsel daran denken (und an die Rücksprung-Adresse beim Anbieter). |
 | `ADMIN_USERNAME` | `admin` | Name des ersten Kontos, das aus `ADMIN_PASSWORD` angelegt wird |
 | `ADMIN_PASSWORD` | – | Legt beim Start das erste Administratorkonto an, falls es noch keines gibt, statt des Einrichtungscodes (besser: `ADMIN_PASSWORD_FILE`). Das Passwort selbst oder ein Argon2-Hash aus `python -m mailreports hash-password`. Wird ignoriert, sobald Konten existieren. |
 | `SECRET_KEY` | – | Verschlüsselt die Schlüssel der Authenticator-Apps in der Datenbank (beliebiger langer Zufallstext, besser: `SECRET_KEY_FILE`). Aufbewahren: Ohne ihn funktionieren die Codes bestehender Zwei-Faktor-Anmeldungen nicht mehr. |

@@ -181,6 +181,22 @@ def check_csrf(request, token: str) -> bool:
     return bool(token) and secrets.compare_digest(acc["s_csrf"], token)
 
 
+def public_url_problem(request) -> str:
+    """German hint if PUBLIC_URL is missing or does not match the address in the browser."""
+    from urllib.parse import urlsplit
+    s = request.app.state.svc.settings
+    if not s.accounts_enabled:
+        return ""
+    host = request.headers.get("host", "")
+    if not s.public_url:
+        return i18n.N_("PUBLIC_URL ist nicht gesetzt. Hinter einem Reverse-Proxy funktionieren Passkeys und "
+                       "Single Sign-on erst damit, z. B. PUBLIC_URL=https://{host}.")
+    if host and urlsplit(s.public_url).netloc.lower() != host.lower():
+        return i18n.N_("PUBLIC_URL ({public}) passt nicht zur aufgerufenen Adresse ({host}). Passkeys und "
+                       "Single Sign-on funktionieren nur unter der Adresse aus PUBLIC_URL.")
+    return ""
+
+
 def render(request, name: str, status: int = 200, **ctx):
     svc = request.app.state.svc
     s = svc.settings
@@ -190,5 +206,7 @@ def render(request, name: str, status: int = 200, **ctx):
     ctx.update(request=request, periods=PERIODS, nav=name.split(".")[0], fetch_running=svc.running,
                user=getattr(request.state, "user", ""), account=acc, is_admin=is_admin(request),
                csrf=acc["s_csrf"] if acc is not None else "", accounts_enabled=s.accounts_enabled,
-               sso_name=s.oidc_name if s.oidc_enabled else "")
+               sso_name=s.oidc_name if s.oidc_enabled else "",
+               public_url_hint=public_url_problem(request) if name in ("status.html", "account.html") else "",
+               public_url=s.public_url, request_host=request.headers.get("host", ""))
     return templates.TemplateResponse(request, name, ctx, status_code=status)

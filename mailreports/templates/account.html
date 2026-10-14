@@ -2,6 +2,7 @@
 {% block title %}{{ _("Konto") }}{% endblock %}
 {% block content %}
 <div class="page-head"><h1>{{ _("Konto") }} <small>· {{ account.username }}</small></h1></div>
+{% if public_url_hint %}<div class="notice bad">{{ _(public_url_hint, public=public_url, host=request_host) }}</div>{% endif %}
 {% if message %}<div class="notice ok" role="status">{{ message }}</div>{% endif %}
 {% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
 

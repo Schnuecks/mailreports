@@ -204,7 +204,7 @@ def load() -> Settings:
         digest_weekday=_weekday(env("DIGEST_WEEKDAY", "mon")),
         metrics_token=env("METRICS_TOKEN"),
         notify_cooldown_hours=max(1, env_int("NOTIFY_COOLDOWN_HOURS", 24)),
-        base_url=env("BASE_URL").rstrip("/"),
+        base_url=(env("BASE_URL") or env("PUBLIC_URL")).rstrip("/"),
         admin_username=env("ADMIN_USERNAME", "admin") or "admin",
         admin_password=env("ADMIN_PASSWORD"),
         auth_disabled=env_bool("AUTH_DISABLED", False),

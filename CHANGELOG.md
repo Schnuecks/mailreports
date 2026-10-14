@@ -2,6 +2,12 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.3.1
+
+- Notifications link to `PUBLIC_URL` when `BASE_URL` is not set (before, messages had no link)
+- Warning in the log and on the status and account pages when `PUBLIC_URL` is missing or does
+  not match the address in the browser, which would break passkeys and single sign-on
+
 ## 0.3.0
 
 - **DNS check** per domain: DMARC record (policy, report address and its authorisation at

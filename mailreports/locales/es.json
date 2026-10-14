@@ -279,6 +279,8 @@
  "Nur Überwachung: E-Mails, die DMARC nicht bestehen, werden gemeldet, aber nicht blockiert.": "Solo supervisión: los correos que no superan DMARC se notifican, pero no se bloquean.",
  "Ordner": "Carpeta",
  "Original": "Original",
+ "PUBLIC_URL ({public}) passt nicht zur aufgerufenen Adresse ({host}). Passkeys und Single Sign-on funktionieren nur unter der Adresse aus PUBLIC_URL.": "PUBLIC_URL ({public}) no coincide con la dirección abierta ({host}). Las passkeys y el inicio de sesión único solo funcionan en la dirección de PUBLIC_URL.",
+ "PUBLIC_URL ist nicht gesetzt. Hinter einem Reverse-Proxy funktionieren Passkeys und Single Sign-on erst damit, z. B. PUBLIC_URL=https://{host}.": "PUBLIC_URL no está definido. Detrás de un proxy inverso, las passkeys y el inicio de sesión único solo funcionan con él, p. ej. PUBLIC_URL=https://{host}.",
  "Passkey hinzufügen": "Añadir passkey",
  "Passkeys": "Passkeys",
  "Passkeys und Sicherheitsschlüssel": "Passkeys y llaves de seguridad",

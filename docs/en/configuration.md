@@ -52,7 +52,7 @@ Findings are sent to every configured channel.
 | `NOTIFY_COOLDOWN_HOURS` | 24 | The same finding is reported at most once in this time |
 | `DIGEST` | `off` | `weekly`: a summary of the last 7 days to all channels |
 | `DIGEST_WEEKDAY` | `mon` | Day of the summary (`mon` … `sun`), sent after 8:00 local time |
-| `BASE_URL` | – | Public address, added as a link to the messages |
+| `BASE_URL` | `PUBLIC_URL` | Public address, added as a link to the messages; only needed if it differs from `PUBLIC_URL` |
 
 A message is sent after a fetch when new reports contain emails that failed DMARC (except
 recognised forwarding), senders that passed but are not in `sources.toml`, or TLS failures.
@@ -74,7 +74,7 @@ fetch) or **read access**.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `PUBLIC_URL` | – | Address in the browser, e.g. `https://dmarc.example.org`. Needed behind a reverse proxy for passkeys and single sign-on; also makes the session cookie HTTPS-only. |
+| `PUBLIC_URL` | – | Address in the browser, e.g. `https://dmarc.example.org`. Needed behind a reverse proxy for passkeys and single sign-on; also makes the session cookie HTTPS-only and is the link in notifications. The status and account pages warn if it is missing or differs from the address in the browser – remember to change it (and the redirect URI at the provider) when the address changes. |
 | `ADMIN_USERNAME` | `admin` | Name of the first account created from `ADMIN_PASSWORD` |
 | `ADMIN_PASSWORD` | – | Creates the first admin account on start if there is none yet, instead of the setup code (better: `ADMIN_PASSWORD_FILE`). The password itself or an Argon2 hash from `python -m mailreports hash-password`. Ignored once accounts exist. |
 | `SECRET_KEY` | – | Encrypts the authenticator keys in the database (any long random text, better: `SECRET_KEY_FILE`). Keep it: without it, codes of existing two-factor sign-ins stop working. |

@@ -388,3 +388,26 @@ def test_access_log_hides_codes():
         "1.2.3.4", "GET", "/oidc/callback?code=authelia_ac_secret&state=abc&iss=x"), None)
     main_module._MaskSecrets().filter(rec)
     assert "secret" not in rec.getMessage() and "abc" not in rec.getMessage() and "iss=x" in rec.getMessage()
+
+
+def test_public_url_hint(tmp_path):
+    client, _ = app_client(tmp_path, admin_password=ADMIN_PW)
+    login(client, "admin", ADMIN_PW)
+    assert "PUBLIC_URL ist nicht gesetzt" in client.get("/status").text
+    (tmp_path / "b").mkdir()
+    svc = Service(make_settings(tmp_path / "b", auth_disabled=False, admin_password=ADMIN_PW,
+                                public_url="https://dmarc.example.org"))
+    # the session cookie is HTTPS-only now, so the test client must use HTTPS
+    client2 = TestClient(create_app(svc), base_url="https://testserver", headers={"accept-language": "de"})
+    login(client2, "admin", ADMIN_PW)
+    text = client2.get("/account").text
+    assert "passt nicht zur aufgerufenen Adresse (testserver)" in text
+    assert svc.settings.public_url == "https://dmarc.example.org"
+
+
+def test_base_url_falls_back_to_public_url(monkeypatch):
+    from mailreports import config
+    monkeypatch.setenv("PUBLIC_URL", "https://dmarc.example.org/")
+    assert config.load().base_url == "https://dmarc.example.org"
+    monkeypatch.setenv("BASE_URL", "https://other.example.org")
+    assert config.load().base_url == "https://other.example.org"
