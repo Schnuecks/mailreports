@@ -395,7 +395,10 @@ def test_public_url_hint(tmp_path):
     login(client, "admin", ADMIN_PW)
     assert "PUBLIC_URL ist nicht gesetzt" in client.get("/status").text
     (tmp_path / "b").mkdir()
-    client2, svc = app_client(tmp_path / "b", admin_password=ADMIN_PW, public_url="https://dmarc.example.org")
+    svc = Service(make_settings(tmp_path / "b", auth_disabled=False, admin_password=ADMIN_PW,
+                                public_url="https://dmarc.example.org"))
+    # the session cookie is HTTPS-only now, so the test client must use HTTPS
+    client2 = TestClient(create_app(svc), base_url="https://testserver", headers={"accept-language": "de"})
     login(client2, "admin", ADMIN_PW)
     text = client2.get("/account").text
     assert "passt nicht zur aufgerufenen Adresse (testserver)" in text
