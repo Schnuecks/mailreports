@@ -8,6 +8,8 @@
   <img src="https://img.shields.io/badge/Python-3.15-3776AB?logo=python&logoColor=white" alt="Python 3.15">
   <a href="https://github.com/Schnuecks/mailreports/pkgs/container/mailreports"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker ready"></a>
   <img src="https://img.shields.io/badge/platform-amd64%20%7C%20arm64-E4572E" alt="Platform amd64 | arm64">
+  <a href="https://github.com/Schnuecks/mailreports/actions/workflows/ci.yml"><img src="https://github.com/Schnuecks/mailreports/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Schnuecks/mailreports/actions/workflows/zap.yml"><img src="https://github.com/Schnuecks/mailreports/actions/workflows/zap.yml/badge.svg" alt="ZAP scan"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-4C9A2A" alt="License AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/status-beta-E4572E" alt="Status: beta">
   <img src="https://img.shields.io/badge/maintained-yes-4C9A2A" alt="Maintained">
@@ -96,6 +98,23 @@ for other domains are not stored.
 - [Development](docs/en/development.md): running locally, tests, translations, screenshots
 
 What changed in each version is listed in the [CHANGELOG](CHANGELOG.md).
+
+## Security
+
+Anyone can send mail to the address in your DMARC record, so mailreports treats every report as
+untrusted input:
+
+- **Parsing:** XML through `defusedxml`, one shared size limit for everything unpacked from a mail
+  and a limit on archive members (no zip bombs).
+- **Sign-in:** per-address and per-user limits on failed sign-ins behind a reverse proxy, passkeys,
+  single sign-on that never takes over an admin account by its name, CSRF tokens and an origin
+  check, a strict Content Security Policy.
+- **Checked on every change:** test suite, Trivy scan of the image, OWASP ZAP baseline scan,
+  Dependabot.
+- **Reviewed:** before the public release, an AI-assisted security review; every finding was
+  reproduced with a test, fixed and re-tested – see the [changelog](CHANGELOG.md).
+
+Please report vulnerabilities privately, see [SECURITY.md](SECURITY.md).
 
 ## How it's built
 
