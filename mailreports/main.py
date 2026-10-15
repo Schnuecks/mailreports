@@ -67,17 +67,33 @@ PUBLIC_PATHS = ("/static/", "/login", "/setup", "/oidc/callback", "/lang/")
 ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload", "/settings")
 
 
-def content_security_policy(logo_url: str) -> str:
-    """Strict policy; images from elsewhere only from the origin of an external LOGO_URL."""
+def _origin(url: str) -> str:
+    """scheme://host[:port] of an HTTPS address (or http on localhost), else empty."""
+    parts = urlsplit(url or "")
+    local = parts.hostname in ("localhost", "127.0.0.1")
+    if parts.netloc and (parts.scheme == "https" or (parts.scheme == "http" and local)):
+        return f"{parts.scheme}://{parts.netloc}".lower()
+    return ""
+
+
+def content_security_policy(logo_url: str, form_targets: list[str] | tuple = ()) -> str:
+    """Strict policy. Images from elsewhere only from the origin of an external LOGO_URL.
+    Forms only to this page and to the sign-in pages in form_targets (AUTH_PORTAL_URL, the
+    single sign-on provider): when the proxy's session has expired, it redirects a form such
+    as "Sign out" there, and without the address the browser silently blocks the submit."""
     img = "'self' data:"
-    parts = urlsplit(logo_url or "")
-    if parts.scheme == "https" and parts.netloc:
-        img += f" https://{parts.netloc}"
+    logo = _origin(logo_url)
+    if logo.startswith("https://"):
+        img += f" {logo}"
+    forms = ["'self'"]
+    for url in form_targets:
+        origin = _origin(url)
+        if origin and origin not in forms:
+            forms.append(origin)
     return ("default-src 'self'; "
             f"img-src {img}; style-src 'self'; script-src 'self'; "
             "base-uri 'none'; object-src 'none'; frame-ancestors 'none'; "
-            # https: for the redirect to the sign-in page of a reverse proxy
-            "form-action 'self' https:")
+            f"form-action {' '.join(forms)}")
 
 
 SECURITY_HEADERS = {
@@ -108,7 +124,8 @@ def create_app(service: Service | None = None) -> FastAPI:
     web.setup(svc)
     app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
     settings = svc.settings
-    headers = {**SECURITY_HEADERS, "Content-Security-Policy": content_security_policy(settings.logo_url)}
+    csp = content_security_policy(settings.logo_url, [*settings.auth_portal_urls, settings.oidc_issuer])
+    headers = {**SECURITY_HEADERS, "Content-Security-Policy": csp}
 
     # ------------------------------------------------------------ access and language
 

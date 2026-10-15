@@ -141,6 +141,11 @@ def test_security_headers(tmp_path):
                if d.startswith("img-src"))
     assert img == "img-src 'self' data: https://cdn.example"
     assert "https://" not in content_security_policy("/static/logo.svg").split("img-src")[1].split(";")[0]
+    # forms: only this page, unless sign-in pages are configured
+    assert csp.endswith("form-action 'self'") and "https:" not in csp
+    csp = content_security_policy("", ["https://auth.example.org/", "https://auth.example.org/api/oidc",
+                                       "http://evil.example", "https://sso.example.org:8443"])
+    assert csp.endswith("form-action 'self' https://auth.example.org https://sso.example.org:8443")
     r = TestClient(create_app(Service(make_settings(tmp_path)))).get("/")
     assert r.headers["cross-origin-opener-policy"] == "same-origin"
     assert r.headers["cross-origin-embedder-policy"] == "credentialless"

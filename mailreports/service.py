@@ -34,6 +34,10 @@ class Service:
         if s.imap_enabled and s.imap_security == "none" and s.imap_host not in ("localhost", "127.0.0.1", "::1"):
             log.warning("IMAP_SECURITY=none sends the IMAP password unencrypted to %s; use ssl or starttls.",
                         s.imap_host)
+        if s.auth_header and not s.auth_portal_urls:
+            log.warning("AUTH_HEADER is set but AUTH_PORTAL_URL is not: when the proxy's session expires, "
+                        "forms cannot be redirected to its sign-in page. Set AUTH_PORTAL_URL, e.g. "
+                        "https://auth.example.org")
         if s.oidc_issuer and not s.oidc_issuer.startswith("https://"):
             raise SystemExit("OIDC_ISSUER must be an https:// address.")
         self.limiter = accounts.LoginLimiter()

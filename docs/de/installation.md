@@ -52,7 +52,12 @@ Proxy setzt:
 AUTH_HEADER=Remote-User        # Anfragen ohne diesen Header werden abgewiesen (401)
 ALLOWED_GROUPS=admins          # optional, verglichen mit Remote-Groups
 TRUSTED_PROXIES=172.20.0.5     # nur Anfragen vom Proxy selbst annehmen
+AUTH_PORTAL_URL=https://auth.example.org   # Anmeldeseite des Proxys
 ```
+
+Mit `AUTH_PORTAL_URL` dürfen Formulare zur Anmeldeseite des Proxys umgeleitet werden, wenn
+dessen Sitzung abgelaufen ist; ohne die Adresse blockiert der Browser das still (Content
+Security Policy `form-action`). Der Anbieter aus `OIDC_ISSUER` ist automatisch erlaubt.
 
 Dem Header kann man nur trauen, wenn sonst niemand den Container erreicht: keinen Port
 veröffentlichen und `TRUSTED_PROXIES` **so eng wie möglich setzen – auf die Adresse des

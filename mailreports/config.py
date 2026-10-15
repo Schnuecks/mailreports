@@ -114,6 +114,7 @@ class Settings:
     oidc_allowed_group: str = ""
     oidc_create_users: bool = False
     oidc_link_username: bool = False  # match existing accounts by username (never admins)
+    auth_portal_urls: list[str] = field(default_factory=list)  # sign-in page of a reverse proxy
     auth_header: str = ""             # e.g. Remote-User: requests without it are refused
     allowed_groups: list[str] = field(default_factory=list)
     trusted_proxies: list = field(default_factory=list)
@@ -247,6 +248,7 @@ def load() -> Settings:
         oidc_allowed_group=env("OIDC_ALLOWED_GROUP"),
         oidc_create_users=env_bool("OIDC_CREATE_USERS", False),
         oidc_link_username=env_bool("OIDC_LINK_USERNAME", False),
+        auth_portal_urls=env_list("AUTH_PORTAL_URL"),
         auth_header=env("AUTH_HEADER"),
         allowed_groups=env_list("ALLOWED_GROUPS"),
         trusted_proxies=_networks(env_list("TRUSTED_PROXIES")),
