@@ -2,6 +2,16 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.4.5
+
+Hardening from the ZAP baseline scan (no vulnerability found):
+
+- Content Security Policy: `base-uri 'none'` and `object-src 'none'`; images from other
+  servers only from the origin of an external `LOGO_URL` instead of any HTTPS address
+- New headers: `Permissions-Policy`, `Cross-Origin-Opener-Policy`,
+  `Cross-Origin-Resource-Policy` and `Cross-Origin-Embedder-Policy: credentialless`
+- ZAP rules: false alarms and intended behaviour documented in `.zap/rules.tsv`
+
 ## 0.4.4
 
 Security fixes from a review before the public release:

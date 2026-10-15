@@ -67,6 +67,32 @@ PUBLIC_PATHS = ("/static/", "/login", "/setup", "/oidc/callback", "/lang/")
 ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload", "/settings")
 
 
+def content_security_policy(logo_url: str) -> str:
+    """Strict policy; images from elsewhere only from the origin of an external LOGO_URL."""
+    img = "'self' data:"
+    parts = urlsplit(logo_url or "")
+    if parts.scheme == "https" and parts.netloc:
+        img += f" https://{parts.netloc}"
+    return ("default-src 'self'; "
+            f"img-src {img}; style-src 'self'; script-src 'self'; "
+            "base-uri 'none'; object-src 'none'; frame-ancestors 'none'; "
+            # https: for the redirect to the sign-in page of a reverse proxy
+            "form-action 'self' https:")
+
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin",
+    "X-Frame-Options": "DENY",
+    "Cache-Control": "no-store",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    # credentialless instead of require-corp: an external LOGO_URL without CORP header still loads
+    "Cross-Origin-Embedder-Policy": "credentialless",
+}
+
+
 def create_app(service: Service | None = None) -> FastAPI:
     svc = service or Service()
 
@@ -82,6 +108,7 @@ def create_app(service: Service | None = None) -> FastAPI:
     web.setup(svc)
     app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
     settings = svc.settings
+    headers = {**SECURITY_HEADERS, "Content-Security-Policy": content_security_policy(settings.logo_url)}
 
     # ------------------------------------------------------------ access and language
 
@@ -133,14 +160,8 @@ def create_app(service: Service | None = None) -> FastAPI:
             return web.render(request, "error.html", status=403,
                               message=i18n._("Für diese Seite fehlt die Berechtigung."))
         response = await call_next(request)
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("Referrer-Policy", "same-origin")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Cache-Control", "no-store")
-        response.headers.setdefault(
-            "Content-Security-Policy",
-            "default-src 'self'; img-src 'self' https: data:; style-src 'self'; script-src 'self'; "
-            "frame-ancestors 'none'; form-action 'self' https:")
+        for name, value in headers.items():
+            response.headers.setdefault(name, value)
         return response
 
     def same_origin(request: Request) -> bool:

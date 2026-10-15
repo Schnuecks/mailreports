@@ -125,3 +125,25 @@ def test_client_ip_behind_trusted_proxy(tmp_path):
     assert web.client_ip(req("172.20.1.1", "garbage")) == "172.20.1.1"
     settings.trusted_proxies = []
     assert web.client_ip(req("172.20.1.1", "203.0.113.7")) == "172.20.1.1"
+
+
+def test_security_headers(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from mailreports.main import content_security_policy, create_app
+    from mailreports.service import Service
+    from tests.conftest import make_settings
+    csp = content_security_policy("")
+    img = next(d for d in csp.split("; ") if d.startswith("img-src"))
+    assert img == "img-src 'self' data:" and "https:" not in img
+    assert "base-uri 'none'" in csp and "object-src 'none'" in csp
+    img = next(d for d in content_security_policy("https://cdn.example/logo.svg").split("; ")
+               if d.startswith("img-src"))
+    assert img == "img-src 'self' data: https://cdn.example"
+    assert "https://" not in content_security_policy("/static/logo.svg").split("img-src")[1].split(";")[0]
+    r = TestClient(create_app(Service(make_settings(tmp_path)))).get("/")
+    assert r.headers["cross-origin-opener-policy"] == "same-origin"
+    assert r.headers["cross-origin-embedder-policy"] == "credentialless"
+    assert r.headers["cross-origin-resource-policy"] == "same-origin"
+    assert "camera=()" in r.headers["permissions-policy"]
+    assert "object-src 'none'" in r.headers["content-security-policy"]
