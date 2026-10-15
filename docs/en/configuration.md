@@ -112,6 +112,7 @@ Register `PUBLIC_URL/oidc/callback` as redirect URI at the provider, with the sc
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `AUTH_PORTAL_URL` | – | Sign-in page of a reverse proxy in front of mailreports, e.g. `https://auth.example.org` (several separated by commas). Forms may only lead to this server, to these addresses and to `OIDC_ISSUER`; without it, a form such as “Sign out” silently does nothing once the proxy's session has expired |
 | `AUTH_HEADER` | – | Header with the user name set by the login proxy, e.g. `Remote-User`. If set, requests without it get 401. Requires `TRUSTED_PROXIES`, otherwise mailreports refuses to start. |
 | `ALLOWED_GROUPS` | – | Comma-separated; at least one must appear in `Remote-Groups` |
 | `TRUSTED_PROXIES` | – | Comma-separated addresses or networks; requests from anywhere else get 403. Use the proxy's single address, not the whole network (see [Installation](installation.md#3-behind-a-reverse-proxy-with-login)). |

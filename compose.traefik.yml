@@ -16,6 +16,7 @@ services:
       SOURCES_FILE: /config/sources.toml
       AUTH_HEADER: Remote-User
       TRUSTED_PROXIES: 172.20.0.5         # the proxy's address, adjust
+      AUTH_PORTAL_URL: https://auth.example.org   # the proxy's sign-in page, adjust
     secrets: [imap_password, pushover_token, pushover_user]
     volumes:
       - ./data:/data

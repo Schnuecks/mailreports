@@ -51,7 +51,12 @@ can use it instead of its own accounts and check the header the proxy sets:
 AUTH_HEADER=Remote-User        # requests without it are refused (401)
 ALLOWED_GROUPS=admins          # optional, compared with Remote-Groups
 TRUSTED_PROXIES=172.20.0.5     # only accept requests from the proxy itself
+AUTH_PORTAL_URL=https://auth.example.org   # the proxy's sign-in page
 ```
+
+`AUTH_PORTAL_URL` lets forms be redirected to the proxy's sign-in page once its session has
+expired; without it, the browser blocks that silently (Content Security Policy `form-action`).
+The provider in `OIDC_ISSUER` is allowed automatically.
 
 The header can only be trusted if nobody else can reach the container: do not publish the
 port, and set `TRUSTED_PROXIES` **as narrow as possible – the proxy's own address, not the

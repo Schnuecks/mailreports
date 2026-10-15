@@ -118,6 +118,7 @@ Beim Anbieter `PUBLIC_URL/oidc/callback` als Redirect-URI eintragen, mit den Sco
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
+| `AUTH_PORTAL_URL` | – | Anmeldeseite eines Reverse-Proxys vor mailreports, z. B. `https://auth.example.org` (mehrere durch Kommas getrennt). Formulare dürfen nur zu diesem Server, zu diesen Adressen und zu `OIDC_ISSUER` führen; ohne die Adresse passiert bei einem Formular wie „Abmelden“ nichts, sobald die Sitzung beim Proxy abgelaufen ist |
 | `AUTH_HEADER` | – | Header mit dem Benutzernamen vom Anmelde-Proxy, z. B. `Remote-User`. Wenn gesetzt, bekommen Anfragen ohne ihn 401. Braucht `TRUSTED_PROXIES`, sonst startet mailreports nicht. |
 | `ALLOWED_GROUPS` | – | Kommagetrennt; mindestens eine muss in `Remote-Groups` stehen |
 | `TRUSTED_PROXIES` | – | Kommagetrennte Adressen oder Netze; Anfragen von anderswo bekommen 403. Am besten nur die Adresse des Proxys, nicht das ganze Netz (siehe [Installation](installation.md#3-hinter-einem-reverse-proxy-mit-anmeldung)). |
