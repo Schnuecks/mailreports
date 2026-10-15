@@ -2,6 +2,13 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- Status page tidied up: mailbox next to extras, data next to upload, in two even columns
+  instead of three uneven ones
+- On phones, labels and values of detail lists stand side by side instead of one below the other
+- "no attachment" in the mail log is translated
+
 ## 0.4.6
 
 - **`AUTH_PORTAL_URL`:** forms may only lead to this server, to the sign-in page of a reverse

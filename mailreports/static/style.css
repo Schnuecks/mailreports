@@ -177,6 +177,9 @@ h4 { margin: 1rem 0 .35rem; font-size: .9rem; color: var(--muted); }
 .grid.domains { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .grid.stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .grid.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.grid.pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid > .span-all { grid-column: 1 / -1; }
+@media (max-width: 760px) { .grid.pair { grid-template-columns: minmax(0, 1fr); } }
 
 .domain-card { color: var(--text); text-decoration: none; display: block; transition: border-color .15s, transform .15s; }
 .domain-card:hover { border-color: var(--accent-2); color: var(--text); transform: translateY(-1px); }
@@ -314,8 +317,8 @@ select, input[type=file] { font: inherit; color: var(--text); background: var(--
   .js .langs { display: flex; gap: .75rem; font-size: .95rem; }
   main { padding: 1rem; }
   .dc-stats { flex-wrap: wrap; }
-  dl.kv { grid-template-columns: 1fr; }
-  dl.kv dt { margin-top: .4rem; }
+  dl.kv { grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr); gap: .35rem .75rem; }
+  dl.kv dt { overflow-wrap: anywhere; hyphens: auto; }
 }
 .foot a { color: var(--muted); }
 .linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); cursor: pointer; }
