@@ -2,7 +2,7 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.4.7
 
 - Status page tidied up: mailbox next to extras, data next to upload, in two even columns
   instead of three uneven ones
