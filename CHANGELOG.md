@@ -2,7 +2,7 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.4.6
 
 - **`AUTH_PORTAL_URL`:** forms may only lead to this server, to the sign-in page of a reverse
   proxy given here and to the single sign-on provider (`OIDC_ISSUER`), instead of any HTTPS
