@@ -8,6 +8,8 @@
   <img src="https://img.shields.io/badge/Python-3.15-3776AB?logo=python&logoColor=white" alt="Python 3.15">
   <a href="https://github.com/Schnuecks/mailreports/pkgs/container/mailreports"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker ready"></a>
   <img src="https://img.shields.io/badge/platform-amd64%20%7C%20arm64-E4572E" alt="Platform amd64 | arm64">
+  <a href="https://github.com/Schnuecks/mailreports/actions/workflows/ci.yml"><img src="https://github.com/Schnuecks/mailreports/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Schnuecks/mailreports/actions/workflows/zap.yml"><img src="https://github.com/Schnuecks/mailreports/actions/workflows/zap.yml/badge.svg" alt="ZAP scan"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-4C9A2A" alt="License AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/status-beta-E4572E" alt="Status: beta">
   <img src="https://img.shields.io/badge/maintained-yes-4C9A2A" alt="Maintained">
@@ -99,6 +101,24 @@ setzen, dann werden Berichte für andere Domains nicht gespeichert.
 - [Entwicklung](docs/de/development.md): lokal starten, Tests, Übersetzungen, Screenshots
 
 Was sich in welcher Version geändert hat, steht im [CHANGELOG](CHANGELOG.md).
+
+## Sicherheit
+
+Jeder kann eine Mail an die Adresse in deinem DMARC-Eintrag schicken, deshalb behandelt
+mailreports jeden Bericht als nicht vertrauenswürdig:
+
+- **Einlesen:** XML über `defusedxml`, eine gemeinsame Größengrenze für alles, was aus einer Mail
+  entpackt wird, und eine Grenze für die Zahl der Dateien in einem Archiv (keine ZIP-Bomben).
+- **Anmeldung:** Begrenzung fehlgeschlagener Anmeldungen je Adresse und je Benutzer auch hinter
+  einem Reverse Proxy, Passkeys, Single Sign-on, das nie ein Admin-Konto über seinen Namen
+  übernimmt, CSRF-Tokens und Herkunftsprüfung, eine strikte Content-Security-Policy.
+- **Bei jeder Änderung geprüft:** Tests, Trivy-Scan des Images, OWASP-ZAP-Baseline-Scan,
+  Dependabot.
+- **Überprüft:** Vor der Veröffentlichung ein KI-gestützter Sicherheits-Review; jeder Fund wurde
+  mit einem Test nachgestellt, behoben und erneut geprüft – nachzulesen im
+  [Changelog](CHANGELOG.md).
+
+Sicherheitslücken bitte vertraulich melden, siehe [SECURITY.md](SECURITY.md).
 
 ## Wie es entsteht
 
