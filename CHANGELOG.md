@@ -2,6 +2,31 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.0.0
+
+First public release. mailreports fetches DMARC aggregate reports and SMTP TLS reports from an
+IMAP mailbox and explains them in plain words.
+
+- **Reports:** DMARC (XML, gzip, zip) and TLS-RPT (JSON), duplicates recognised, original files
+  kept for download; emails are flagged or moved, never deleted; read-only mode for a mailbox
+  shared with another program
+- **Plain-language explanations** for every record, sender classification (own servers and
+  services from `sources.toml`, DKIM selectors, forwarders, unknown senders) with reverse DNS,
+  country and network
+- **Overview per domain** with pass rate and history, sender pages, search, CSV export,
+  a **DNS check** (DMARC, SPF, DKIM, MX/DANE, MTA-STS, TLS-RPT) and a **policy recommendation**
+- **Notifications** via Pushover, ntfy, webhook or email, set up in the app or with environment
+  variables, plus an optional weekly summary; key figures as JSON and for Prometheus
+- **Sign-in:** built-in accounts with roles, two-factor sign-in (authenticator app, passkeys),
+  single sign-on (OpenID Connect) or a login proxy (`AUTH_HEADER` with `TRUSTED_PROXIES`)
+- **Hardened:** untrusted reports parsed safely with one unpack limit per email, strict Content
+  Security Policy and cross-origin headers, CSRF protection, sign-in limits, read-only
+  container without root, checked with a ZAP baseline scan
+- Six languages, light and dark theme in a neutral or olive green design, works on phones;
+  images for amd64 and arm64
+
+The detailed history of the test phase follows below.
+
 ## 0.4.7
 
 - Status page tidied up: mailbox next to extras, data next to upload, in two even columns
