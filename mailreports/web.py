@@ -191,8 +191,14 @@ def page_of(request) -> int:
 
 
 def safe_next(value: str) -> str:
-    """Only local paths, so a link cannot redirect elsewhere after signing in."""
-    return value if value.startswith("/") and not value.startswith("//") and "\\" not in value else "/"
+    """Only local paths, so a link cannot redirect elsewhere after signing in. Browsers drop tabs
+    and line breaks from addresses and read a backslash as a slash, so "/\t/evil.example" or
+    "/\\evil.example" would become "//evil.example": such values are refused as well."""
+    if not value.startswith("/") or value.startswith("//"):
+        return "/"
+    if any(ch == "\\" or ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        return "/"
+    return value
 
 
 def account(request):

@@ -152,3 +152,19 @@ def test_security_headers(tmp_path):
     assert r.headers["cross-origin-resource-policy"] == "same-origin"
     assert "camera=()" in r.headers["permissions-policy"]
     assert "object-src 'none'" in r.headers["content-security-policy"]
+
+
+def test_safe_next_refuses_tricks():
+    from mailreports.web import safe_next
+    assert safe_next("/reports?days=30") == "/reports?days=30"
+    for bad in ("//evil.example", "/\\evil.example", "/\t/evil.example", "/\n/evil.example",
+                "https://evil.example", "evil.example", "/\x7f/x", ""):
+        assert safe_next(bad) == "/", bad
+
+
+def test_language_switch_stays_on_this_site(client):
+    r = client.get("/lang/en", headers={"referer": "http://testserver//evil.example", "host": "testserver"},
+                   follow_redirects=False)
+    assert r.headers["location"] == "/"
+    r = client.get("/lang/en", headers={"referer": "http://testserver/reports?days=7"}, follow_redirects=False)
+    assert r.headers["location"] == "/reports?days=7"
