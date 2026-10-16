@@ -2,6 +2,17 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.0.1
+
+Fixes from the first CodeQL scan after the public release:
+
+- **Security:** the address to return to after signing in (and after switching the language)
+  could lead to another site when it contained a tab, a line break or a backslash
+  (`/	/example.com`); such addresses are now refused
+- The health check no longer shows the text of a database error
+- Smaller clean-ups: language cookie only from the fixed list, file name of `sources.toml` on
+  the status page determined on the server
+
 ## 1.0.0
 
 First public release. mailreports fetches DMARC aggregate reports and SMTP TLS reports from an

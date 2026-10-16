@@ -245,8 +245,9 @@ def create_app(service: Service | None = None) -> FastAPI:
     def healthz():
         try:
             svc.db.get_meta("schema")
-        except Exception as exc:  # pragma: no cover
-            return JSONResponse({"status": "error", "detail": str(exc)}, status_code=503)
+        except Exception:  # pragma: no cover
+            log.exception("health check: database not readable")
+            return JSONResponse({"status": "error", "detail": "database not readable"}, status_code=503)
         return {"status": "ok", "version": __version__}
 
     @app.get("/")
@@ -414,7 +415,8 @@ def create_app(service: Service | None = None) -> FastAPI:
                       last_fetch=svc.db.get_meta("last_fetch"), last_ok=svc.db.get_meta("last_fetch_ok"),
                       fetch_error=svc.db.get_meta("last_fetch_error"), summary=summary,
                       notify_error=svc.db.get_meta("last_notify_error"), settings=svc.notify_settings(),
-                      geo=svc.geo, sources=svc.sources, uploaded=request.query_params.get("uploaded"))
+                      geo=svc.geo, sources=svc.sources, uploaded=request.query_params.get("uploaded"),
+                      sources_name=Path(settings.sources_file).name if settings.sources_file else "")
 
     def settings_page(request: Request, status: int = 200, **ctx):
         stored = notifyconfig.load(svc.db, settings.secret_key)
@@ -476,9 +478,10 @@ def create_app(service: Service | None = None) -> FastAPI:
         ref = urlsplit(request.headers.get("referer", ""))
         same_host = ref.netloc and ref.netloc == request.headers.get("host")
         target = (ref.path or "/") + (f"?{ref.query}" if ref.query else "") if same_host else "/"
-        resp = RedirectResponse(target, status_code=303)
-        if code in i18n.LANGUAGES:
-            resp.set_cookie("lang", code, max_age=365 * 86400, samesite="lax", httponly=True)
+        resp = RedirectResponse(web.safe_next(target), status_code=303)
+        lang = next((known for known in i18n.LANGUAGES if known == code), None)
+        if lang:
+            resp.set_cookie("lang", lang, max_age=365 * 86400, samesite="lax", httponly=True)
         return resp
 
     @app.exception_handler(404)
