@@ -46,15 +46,6 @@ ngettext("{n} Mail", "{n} Mails", n)
 
 `tools/i18n_extract.py --keys` prints all keys as JSON to start a new language.
 
-## Screenshots
-
-The images in `docs/screenshots/` are created with Playwright from the demo data:
-
-```bash
-pip install -r requirements-browser.txt && python -m playwright install chromium
-python tools/make_screenshots.py
-```
-
 ## Rules for the pages
 
 - No inline scripts or styles: the Content Security Policy blocks them (a test checks
