@@ -11,7 +11,6 @@
   <a href="https://github.com/Schnuecks/mailreports/actions/workflows/ci.yml"><img src="https://github.com/Schnuecks/mailreports/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/Schnuecks/mailreports/actions/workflows/zap.yml"><img src="https://github.com/Schnuecks/mailreports/actions/workflows/zap.yml/badge.svg" alt="ZAP scan"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-4C9A2A" alt="License AGPL-3.0"></a>
-  <img src="https://img.shields.io/badge/status-beta-E4572E" alt="Status: beta">
   <img src="https://img.shields.io/badge/maintained-yes-4C9A2A" alt="Maintained">
 </p>
 
