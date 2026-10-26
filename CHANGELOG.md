@@ -2,7 +2,7 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.0.2
 
 - **Security:** the image no longer contains pip. It is only needed during the build, and the
   copies of certifi, urllib3, msgpack and setuptools bundled with it were flagged by the image
