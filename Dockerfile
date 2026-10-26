@@ -15,7 +15,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv
 COPY requirements.txt .
+# pip is only needed for the build; removing it also drops the libraries it bundles
 RUN pip install --no-cache-dir -r requirements.txt \
+ && pip uninstall --yes pip \
  && useradd --system --uid 10001 --home-dir /data --shell /usr/sbin/nologin mailreports \
  && mkdir -p /data && chown mailreports /data
 COPY mailreports ./mailreports
