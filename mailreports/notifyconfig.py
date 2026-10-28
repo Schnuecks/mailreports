@@ -20,7 +20,8 @@ from .i18n import N_
 META_KEY = "notify_settings"
 SECRETS = {"pushover_token", "pushover_user", "ntfy_token", "webhook_url", "smtp_password"}
 INTS = {"smtp_port": (1, 65535), "digest_weekday": (0, 6), "notify_cooldown_hours": (1, 24 * 30)}
-CHOICES = {"smtp_security": ("starttls", "ssl", "none"), "digest": ("off", "weekly")}
+CHOICES = {"smtp_security": ("starttls", "ssl", "none"), "digest": ("off", "weekly"),
+           "dns_watch": ("on", "off")}
 URLS = {"ntfy_url", "webhook_url"}
 CHANNEL_OF = {"pushover_token": "Pushover", "pushover_user": "Pushover", "ntfy_token": "ntfy",
               "webhook_url": "Webhook", "smtp_password": "E-Mail"}

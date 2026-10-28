@@ -16,7 +16,15 @@ The domain page has a button **Check DNS**. It looks up the records that are pub
 now and points out problems: the DMARC record (policy, report address and its authorisation
 at another domain), SPF (final `all`, the limit of 10 DNS lookups), every DKIM selector seen in
 the reports with its key length, MX with DANE/TLSA, MTA-STS (mode and whether every MX is in
-the policy) and TLS-RPT. Results are kept for 10 minutes.
+the policy), TLS-RPT and BIMI (brand logo: HTTPS address of an SVG logo, certificate, and a DMARC
+policy strict enough for it). Results are kept for 10 minutes.
+
+In addition the records of every domain are checked **once a day** in the background. A changed,
+new or removed record (DMARC, SPF, MX, MTA-STS, TLS-RPT, BIMI) and a new warning or error are
+listed under **Recent changes** on the DNS page and sent to the notification channels. Problems
+that went away are listed too, but do not cause a message on their own. The first check only
+records the current state; a check that fails because DNS is not reachable is skipped. Turn it
+off under **Settings** or with `DNS_WATCH=off`.
 
 The card **Recommendation** evaluates the last 30 days: if all known sources pass DMARC and no
 unknown source passes, it suggests the next stricter policy (`p=none` → `p=quarantine` →
@@ -44,12 +52,12 @@ All sending IPs of the period with their classification:
 
 | Classification | Meaning |
 |---|---|
-| Own server | matches an `own` entry in `sources.toml` |
+| Own server | matches an `own` entry |
 | Authorised service | matches a `relay` entry, e.g. by its DKIM selector |
 | Forwarding | a `forwarder` entry, a forwarding note in the report, or DKIM valid while SPF failed |
 | Unknown | everything else |
 
-Known sources are shown with their name from `sources.toml`; hover over it to see the type.
+Known sources are shown with their name; hover over it to see the type.
 
 Every IP address links to its own page with history, classification, reverse DNS, country and
 network and all its records. The search field at the top finds IP addresses, host names,
@@ -57,8 +65,21 @@ domains, reporting organisations, report IDs and DKIM selectors.
 
 An **unknown sender that passes DMARC** is usually a service you forgot to list. An
 **unknown sender that fails** is usually someone abusing your domain – that is what DMARC
-stopped. The section **Known sources** at the bottom shows what the app read from
-`sources.toml`.
+stopped. The section **Known sources** at the bottom lists all entries from `sources.toml` and
+from the app.
+
+### Adding a known sender in the app
+
+Admins find the button **Add as known sender** on the page of an unknown IP address. The form
+takes the same criteria as `sources.toml` – addresses or networks, host names, AS numbers and
+DKIM selectors – and shows next to it what the reports say about this IP (host name, network
+operator, selectors, domains). Only the IP address is filled in: a host name or selector also
+covers further servers of the same service, but only fits if it really belongs to that service
+alone. Networks wider than /16 (IPv4) or /32 (IPv6) are refused.
+
+Entries made in the app are stored in the database and take effect immediately, without a
+restart. They can be changed or deleted under **Known sources** (column "Defined in"). Entries
+from `sources.toml` stay read-only in the app; both are used together, the file first.
 
 ## TLS reports
 
@@ -75,7 +96,7 @@ the emails processed last, with the reason when an email did not contain a usabl
 ## Settings
 
 Admins set up the notifications here: Pushover, ntfy, webhook and email, how often the same
-finding may be reported and the weekly summary. **Save and send a test message** checks the
+finding may be reported, the weekly summary and the daily DNS check. **Save and send a test message** checks the
 channels at once and shows the result per channel. An empty password field keeps the stored
 value; **remove** deletes it. Fields set by environment variables are shown as fixed.
 

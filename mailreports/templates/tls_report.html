@@ -11,6 +11,7 @@
     <dt>{{ _("Zeitraum") }}</dt><dd>{{ fmt.range(rep.date_begin, rep.date_end) }}</dd>
     <dt>{{ _("Berichtet von") }}</dt><dd>{{ rep.org_name }}{% if rep.contact %} ({{ rep.contact }}){% endif %}</dd>
     <dt>{{ _("Bericht-ID") }}</dt><dd><code>{{ rep.report_id }}</code></dd>
+    {% if rep.mail_sender %}<dt>{{ _("Absender der E-Mail") }}</dt><dd>{{ rep.mail_sender }}</dd>{% endif %}
     {% if has_raw %}<dt>{{ _("Original") }}</dt><dd><a href="/tls/{{ rep.id }}/raw">{{ _("JSON herunterladen") }}</a></dd>{% endif %}
   </dl>
 </section>

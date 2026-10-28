@@ -9,7 +9,8 @@
     <a class="btn ghost" href="/domain/{{ domain }}/dns?refresh=1">{{ _("Neu prüfen") }}</a>
   </div>
 </div>
-<p class="lead muted">{{ _("Aktuell veröffentlichte DNS-Einträge, abgefragt beim Laden der Seite (zwischengespeichert für 10 Minuten).") }}</p>
+<p class="lead muted">{{ _("Aktuell veröffentlichte DNS-Einträge, abgefragt beim Laden der Seite (zwischengespeichert für 10 Minuten).") }}
+{% if watch %}{{ _("Zusätzlich prüft mailreports die Einträge täglich und meldet Änderungen und neue Probleme.") }}{% if last_watch %} {{ _("Zuletzt: {when}", when=fmt.datetime(last_watch)) }}{% endif %}{% endif %}</p>
 <div class="grid two">
 {% for sec in sections %}
   <section class="card dns-section">
@@ -21,4 +22,17 @@
   </section>
 {% endfor %}
 </div>
+{% if changes %}
+<section class="card">
+  <h2>{{ _("Letzte Änderungen") }}</h2>
+  <ul class="dns-changes">
+  {% for c in changes %}{% set head, detail = describe(c) %}
+    <li class="f-{{ 'ok' if c.kind == 'resolved' else ('bad' if c.kind == 'problem' else 'info') }}">
+      <span class="when">{{ fmt.datetime(c.created_at) }}</span> <strong>{{ head }}</strong>
+      {% if detail and c.kind == "record" %}<code class="detail">{{ detail }}</code>{% elif detail %}<span class="detail">{{ detail }}</span>{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% endblock %}

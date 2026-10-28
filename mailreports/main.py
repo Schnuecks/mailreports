@@ -20,7 +20,8 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, accounts, advice, dnscheck, i18n, notify, notifyconfig, queries, routes_auth, web
+from . import __version__, accounts, advice, dnscheck, dnswatch, i18n, notify, notifyconfig, queries, routes_auth, web
+from . import sources as known
 from .explain import explain_record
 from .ingest import Outcome, ingest_payload
 from .parsing import Payload
@@ -64,7 +65,7 @@ def _csv_cell(value):
 # Reachable without a session (built-in accounts)
 PUBLIC_PATHS = ("/static/", "/login", "/setup", "/oidc/callback", "/lang/")
 # Only for admins
-ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload", "/settings")
+ADMIN_PATHS = ("/users", "/sign-ins", "/fetch", "/upload", "/settings", "/known-sources")
 
 
 def _origin(url: str) -> str:
@@ -290,7 +291,9 @@ def create_app(service: Service | None = None) -> FastAPI:
         mailbox = settings.imap_user if "@" in settings.imap_user else ""
         sections = dnscheck.check_domain(domain, queries.selectors_of(svc.db, domain), mailbox,
                                          refresh=request.query_params.get("refresh") == "1")
-        return render(request, "dns.html", domain=domain, sections=sections)
+        return render(request, "dns.html", domain=domain, sections=sections,
+                      changes=dnswatch.recent(svc.db, domain), watch=svc.notify_settings().dns_watch == "on",
+                      last_watch=svc.db.get_meta("last_dns_watch"), describe=dnswatch.describe)
 
     @app.get("/reports")
     def reports_page(request: Request):
@@ -332,7 +335,8 @@ def create_app(service: Service | None = None) -> FastAPI:
             report = {"id": r["rep_id"], "domain": r["domain"], "adkim": r["adkim"], "aspf": r["aspf"]}
             items.append({"r": r, "verdict": verdict, "ex": explain_record(r, verdict, info, report)})
         return render(request, "source.html", ip=ip, row=rows[0] if rows else None, info=info, items=items,
-                      daily=queries.daily_of_ip(svc.db, ip, days, svc.tz))
+                      daily=queries.daily_of_ip(svc.db, ip, days, svc.tz),
+                      saved=request.query_params.get("saved") == "1")
 
     @app.get("/search")
     def search_page(request: Request):
@@ -384,7 +388,79 @@ def create_app(service: Service | None = None) -> FastAPI:
         domain = request.query_params.get("domain", "")
         rows = queries.sources_for(svc.db, svc.sources, days, domain or None)
         return render(request, "sources.html", rows=rows, domain=domain, domains=queries.all_domains(svc.db),
-                      known=svc.sources)
+                      known=svc.sources, saved=request.query_params.get("saved") == "1",
+                      deleted=request.query_params.get("deleted") == "1")
+
+    # ------------------------------------------------------------ known senders added in the app
+
+    def known_source_page(request: Request, src=None, status: int = 200, **ctx):
+        ip = ctx.pop("ip", "") or request.query_params.get("ip", "")[:64]
+        row = info = None
+        if ip:
+            try:
+                ip = str(ipaddress.ip_address(ip))
+            except ValueError:
+                ip = ""
+        if ip:
+            rows = queries.sources_for(svc.db, svc.sources, 90, ip=ip)
+            row = rows[0] if rows else None
+            info = svc.db.ip_info([ip]).get(ip)
+            if src is None and "values" not in ctx:
+                ctx["values"] = {"ips": ip}
+        ctx.setdefault("values", {})
+        return render(request, "known_source.html", status=status, src=src, ip=ip, row=row, info=info, **ctx)
+
+    async def save_known_source(request: Request, source_id: int | None):
+        form = await request.form()
+        if not web.check_csrf(request, str(form.get("csrf", ""))):
+            raise HTTPException(403)
+        values = {k: str(v)[:2000] for k, v in form.items() if k != "csrf"}
+        ip = values.pop("from_ip", "")
+        current = None
+        if source_id is not None:
+            with svc.db.connect() as con:
+                current = known.stored_source(con, source_id)
+            if current is None:
+                raise HTTPException(404)
+        try:
+            src = known.parse_form(values)
+        except known.Invalid as exc:
+            return known_source_page(request, current, status=400, error=i18n._(exc.message, **exc.params),
+                                     error_field=exc.field, values=values, ip=ip)
+        src.id = source_id
+        with svc.db.connect() as con:
+            known.save_source(con, src, request.state.user)
+        svc.reload_sources()
+        return RedirectResponse(f"/sources/{quote(ip)}?saved=1" if ip else "/sources?saved=1", status_code=303)
+
+    @app.get("/known-sources/new")
+    def known_source_new(request: Request):
+        return known_source_page(request)
+
+    @app.post("/known-sources")
+    async def known_source_create(request: Request):
+        return await save_known_source(request, None)
+
+    @app.get("/known-sources/{source_id}")
+    def known_source_edit(request: Request, source_id: int):
+        with svc.db.connect() as con:
+            src = known.stored_source(con, source_id)
+        if src is None:
+            raise HTTPException(404)
+        return known_source_page(request, src)
+
+    @app.post("/known-sources/{source_id}")
+    async def known_source_update(request: Request, source_id: int):
+        return await save_known_source(request, source_id)
+
+    @app.post("/known-sources/{source_id}/delete")
+    def known_source_delete(request: Request, source_id: int, csrf: str = Form("")):
+        if not web.check_csrf(request, csrf):
+            raise HTTPException(403)
+        with svc.db.connect() as con:
+            known.delete_source(con, source_id)
+        svc.reload_sources()
+        return RedirectResponse("/sources?deleted=1", status_code=303)
 
     @app.get("/tls")
     def tls_page(request: Request):

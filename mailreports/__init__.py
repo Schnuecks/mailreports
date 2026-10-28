@@ -2,4 +2,4 @@
 # Copyright (C) 2026 Schnuecks
 """mailreports – collects DMARC and SMTP TLS reports from an IMAP mailbox and explains them."""
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"

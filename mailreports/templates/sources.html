@@ -16,8 +16,10 @@
   </label>
   <noscript><button class="btn">{{ _("Filtern") }}</button></noscript>
 </form>
+{% if saved %}<div class="notice ok" role="status">{{ _("Bekannter Absender gespeichert.") }}</div>{% endif %}
+{% if deleted %}<div class="notice ok" role="status">{{ _("Eintrag gelöscht.") }}</div>{% endif %}
 <section class="card">
-  <p class="muted">{{ _("Alle IP-Adressen, die laut den Berichten E-Mails im Namen der Domains versendet haben. Bekannte Quellen werden in der Datei sources.toml festgelegt.") }}</p>
+  <p class="muted">{{ _("Alle IP-Adressen, die laut den Berichten E-Mails im Namen der Domains versendet haben. Bekannte Quellen stehen in der Datei sources.toml oder werden hier in der App eingetragen.") }}</p>
   {% if rows %}
   <div class="table-wrap"><table>
     <thead><tr><th>{{ _("IP-Adresse") }}</th><th>{{ _("Einordnung") }}</th><th class="num">{{ _("E-Mails") }}</th><th class="num">{{ _("Bestanden") }}</th><th>{{ _("Ergebnis beim Empfänger") }}</th><th>{{ _("Absender-Domains") }}</th><th>{{ _("DKIM-Selektoren") }}</th></tr></thead>
@@ -37,11 +39,12 @@
   </table></div>
   {% else %}<p class="muted">{{ _("Keine Daten im Zeitraum.") }}</p>{% endif %}
 </section>
-{% if known %}
+{% if known or is_admin %}
 <section class="card">
-  <h2>{{ _("Bekannte Quellen") }}</h2>
+  <div class="card-head"><h2>{{ _("Bekannte Quellen") }}</h2>{% if is_admin %}<a class="btn ghost" href="/known-sources/new">{{ _("Neuer Eintrag") }}</a>{% endif %}</div>
+  {% if known %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{ _("Name") }}</th><th>{{ _("Art") }}</th><th>{{ _("Erkannt an") }}</th></tr></thead>
+    <thead><tr><th>{{ _("Name") }}</th><th>{{ _("Art") }}</th><th>{{ _("Erkannt an") }}</th><th>{{ _("Eingetragen in") }}</th></tr></thead>
     <tbody>
     {% for s in known %}
       <tr><td>{{ s.name }}{% if s.note %}<small class="note">{{ s.note }}</small>{% endif %}</td><td>{{ m.kind_badge(s.kind) }}</td>
@@ -50,10 +53,12 @@
         {% if s.ptr %}PTR: {{ s.ptr|join(", ") }}<br>{% endif %}
         {% if s.asn %}AS: {{ s.asn|join(", ") }}<br>{% endif %}
         {% if s.dkim_selectors %}DKIM: {{ s.dkim_selectors|join(", ") }}{% if s.dkim_domains %} ({{ s.dkim_domains|join(", ") }}){% endif %}{% endif %}
-      </small></td></tr>
+      </small></td>
+      <td>{% if s.id %}{% if is_admin %}<a href="/known-sources/{{ s.id }}">{{ _("App · bearbeiten") }}</a>{% else %}{{ _("App") }}{% endif %}{% else %}<small class="muted">sources.toml</small>{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table></div>
+  {% else %}<p class="muted">{{ _("Noch keine bekannten Quellen eingetragen.") }}</p>{% endif %}
 </section>
 {% endif %}
 {% endblock %}

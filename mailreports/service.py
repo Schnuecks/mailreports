@@ -8,10 +8,10 @@ import threading
 import time
 from datetime import datetime
 
-from . import accounts, config, enrich, fetch, notify, notifyconfig, secretbox, web
+from . import accounts, config, dnswatch, enrich, fetch, notify, notifyconfig, secretbox, web
 from .db import Database
 from .ingest import Outcome
-from .sources import load_sources
+from .sources import load_sources, stored_sources
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +44,8 @@ class Service:
         self.db = Database(self.settings.db_path)
         if s.accounts_enabled:
             self._prepare_accounts()
-        self.sources = load_sources(self.settings.sources_file)
+        self.file_sources = load_sources(self.settings.sources_file)
+        self.reload_sources()
         self.geo = enrich.GeoIP(self.settings)
         for net in self.settings.trusted_proxies:
             if net.num_addresses > 1:
@@ -71,6 +72,11 @@ class Service:
                 return
             code = accounts.setup_code(con)
         log.warning("No account yet. Open the page and create the first one with the setup code %s", code)
+
+    def reload_sources(self) -> None:
+        """Known senders: sources.toml first, then the ones added in the app."""
+        with self.db.connect() as con:
+            self.sources = self.file_sources + stored_sources(con)
 
     def notify_settings(self) -> config.Settings:
         """Settings including the notification channels from the settings page."""
@@ -113,7 +119,7 @@ class Service:
     # ------------------------------------------------------------ loop
 
     def periodic(self) -> None:
-        """Daily jobs: deleting old data; the weekly summary."""
+        """Daily jobs: deleting old data, the DNS check; the weekly summary."""
         now = int(time.time())
         s = self.notify_settings()
         if s.digest == "weekly" and s.notify_enabled:
@@ -122,6 +128,11 @@ class Service:
             if local.weekday() == s.digest_weekday and local.hour >= 8 and self.db.get_meta("last_digest") != week:
                 if notify.send_digest(self.db, s, self.sources, web.zone(s.timezone)):
                     self.db.set_meta("last_digest", week)
+        if s.dns_watch == "on" and now - int(self.db.get_meta("last_dns_watch", "0") or 0) >= 86400:
+            self.db.set_meta("last_dns_watch", str(now))
+            changes = dnswatch.check(self.db, s)
+            if changes:
+                dnswatch.report(self.db, s, changes)
         if now - int(self.db.get_meta("last_housekeeping", "0") or 0) >= 86400:
             removed = self.db.housekeeping(self.settings.retention_days)
             self.db.set_meta("last_housekeeping", str(now))

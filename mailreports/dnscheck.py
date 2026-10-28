@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Schnuecks
-"""Checks the DNS records of a domain: DMARC, SPF, DKIM, MTA-STS, TLS-RPT, MX and DANE.
+"""Checks the DNS records of a domain: DMARC, SPF, DKIM, MTA-STS, TLS-RPT, MX and DANE, BIMI.
 
 Texts are German (translation keys) and are translated when the page is rendered.
 """
@@ -350,6 +350,48 @@ def check_mx(domain: str, mx_hosts: list[str]) -> Section:
     return sec
 
 
+# ---------------------------------------------------------------- BIMI
+
+def check_bimi(domain: str, dmarc: Section) -> Section:
+    """Brand logo (default selector). The logo itself is not downloaded."""
+    sec = Section("bimi", N_("BIMI"))
+    records = [t for t in txt(f"default._bimi.{domain}") if t.lower().startswith("v=bimi1")]
+    if not records:
+        sec.add("info", N_("Kein BIMI-Eintrag. Das ist optional: Mit BIMI zeigen unterstützende Postfächer das "
+                           "Logo der Marke neben den E-Mails."))
+        return sec
+    if len(records) > 1:
+        sec.add("bad", N_("Mehrere BIMI-Einträge gefunden; empfangende Server ignorieren dann alle."))
+    sec.record = records[0]
+    t = tags(records[0])
+    logo, cert = t.get("l", ""), t.get("a", "")
+    if not logo and not cert:
+        sec.add("info", N_("Leerer Eintrag: Die Domain zeigt ausdrücklich kein Logo."))
+        return sec
+    if not logo:
+        sec.add("bad", N_("Die Adresse des Logos (l=) fehlt."))
+    elif not logo.lower().startswith("https://"):
+        sec.add("bad", N_("Das Logo muss über HTTPS abrufbar sein (l=https://…)."))
+    elif not logo.lower().split("?")[0].endswith(".svg"):
+        sec.add("warn", N_("Das Logo muss ein SVG-Bild im Format SVG Tiny PS sein."))
+    else:
+        sec.add("ok", N_("Logo: {url}"), url=logo)
+    if cert:
+        if cert.lower().startswith("https://"):
+            sec.add("ok", N_("Zertifikat für das Logo angegeben (a=)."))
+        else:
+            sec.add("bad", N_("Das Zertifikat muss über HTTPS abrufbar sein (a=https://…)."))
+    else:
+        sec.add("info", N_("Kein Zertifikat (a=): Viele große Postfachanbieter zeigen das Logo nur mit einem "
+                           "Markenzertifikat (VMC oder CMC)."))
+    policy = tags(dmarc.record).get("p", "").lower() if dmarc.record else ""
+    pct = tags(dmarc.record).get("pct", "100") if dmarc.record else "100"
+    if policy not in ("quarantine", "reject") or pct != "100":
+        sec.add("warn", N_("BIMI wirkt nur mit der DMARC-Richtlinie p=quarantine oder p=reject für alle E-Mails "
+                           "(pct=100)."))
+    return sec
+
+
 # ---------------------------------------------------------------- all together
 
 _cache: dict[str, tuple[float, list[Section]]] = {}
@@ -364,8 +406,10 @@ def check_domain(domain: str, selectors: list[str], mailbox: str, refresh: bool 
     sections: list[Section] = []
     try:
         mx_hosts = mx(domain)
-        sections = [check_dmarc(domain, mailbox), check_spf(domain), check_dkim(domain, selectors),
-                    check_mx(domain, mx_hosts), check_mta_sts(domain, mx_hosts), check_tlsrpt(domain)]
+        dmarc = check_dmarc(domain, mailbox)
+        sections = [dmarc, check_spf(domain), check_dkim(domain, selectors),
+                    check_mx(domain, mx_hosts), check_mta_sts(domain, mx_hosts), check_tlsrpt(domain),
+                    check_bimi(domain, dmarc)]
     except DnsError as exc:
         err = Section("error", N_("DNS"))
         err.add("bad", N_("Die DNS-Abfrage ist fehlgeschlagen: {error}"), error=str(exc)[:200])

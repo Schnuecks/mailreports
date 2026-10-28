@@ -96,6 +96,7 @@ class Settings:
     notify_email: list[str] = field(default_factory=list)
     digest: str = "off"               # weekly or off
     digest_weekday: int = 0           # 0 = Monday
+    dns_watch: str = "on"             # daily DNS check of the domains: on or off
     metrics_token: str = ""
     notify_cooldown_hours: int = 24
     base_url: str = ""
@@ -186,7 +187,7 @@ NOTIFY_VARS = {
     "smtp_host": "SMTP_HOST", "smtp_port": "SMTP_PORT", "smtp_security": "SMTP_SECURITY",
     "smtp_user": "SMTP_USER", "smtp_password": "SMTP_PASSWORD", "smtp_from": "SMTP_FROM",
     "notify_email": "NOTIFY_EMAIL", "digest": "DIGEST", "digest_weekday": "DIGEST_WEEKDAY",
-    "notify_cooldown_hours": "NOTIFY_COOLDOWN_HOURS",
+    "notify_cooldown_hours": "NOTIFY_COOLDOWN_HOURS", "dns_watch": "DNS_WATCH",
 }
 
 
@@ -231,6 +232,7 @@ def load() -> Settings:
         notify_email=env_list("NOTIFY_EMAIL"),
         digest=(env("DIGEST", "off") or "off").lower(),
         digest_weekday=_weekday(env("DIGEST_WEEKDAY", "mon")),
+        dns_watch="off" if (env("DNS_WATCH", "on") or "on").lower() in ("off", "false", "0", "no") else "on",
         metrics_token=env("METRICS_TOKEN"),
         notify_cooldown_hours=max(1, env_int("NOTIFY_COOLDOWN_HOURS", 24)),
         base_url=(env("BASE_URL") or env("PUBLIC_URL")).rstrip("/"),

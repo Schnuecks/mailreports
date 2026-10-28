@@ -366,6 +366,11 @@ ul.findings li::marker { font-weight: 700; }
 .f-info::marker { content: "i  "; color: var(--muted); }
 .f-warn::marker { content: "!  "; color: var(--warn); }
 .f-bad::marker { content: "✕  "; color: var(--bad); }
+ul.dns-changes { margin: 0; padding-left: 1.2rem; }
+ul.dns-changes li { margin: .45rem 0; }
+ul.dns-changes li::marker { font-weight: 700; }
+ul.dns-changes .when { color: var(--muted); font-size: .85rem; margin-right: .3rem; }
+ul.dns-changes .detail { display: block; margin-top: .2rem; font-size: .8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .help-link { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%;
   border: 1px solid var(--line); color: var(--text); text-decoration: none; font-weight: 700; font-size: .85rem; }
 .help-link:hover { border-color: var(--btn-hover); color: var(--btn-hover); }

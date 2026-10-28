@@ -31,12 +31,14 @@ haben – statt XML und Fehlercodes.
   TLS-Fehlertyp, mit dem, was zu tun ist
 - **Einordnung der Absender:** eigener Server, beauftragte Dienste (zum Beispiel am
   DKIM-Selektor), Weiterleitungen und Unbekannte, mit Reverse-DNS und optional Land und Netz
-  (AS) per GeoIP
+  (AS) per GeoIP; bekannte Absender trägst du mit einem Klick bei einer unbekannten IP in der App
+  ein oder in einer Datei
 - **Berichtsdetails** mit jeder DKIM-Signatur und jedem Selektor, der SPF-Prüfung,
   Header-From und Envelope-From; die Originaldatei zum Herunterladen und alle Einträge als
   CSV-Export
 - **DNS-Prüfung** der eigenen Domains: DMARC, SPF (inkl. der Grenze von 10 Abfragen),
-  DKIM-Schlüssellängen, MTA-STS, TLS-RPT, MX und DANE
+  DKIM-Schlüssellängen, MTA-STS, TLS-RPT, MX und DANE, BIMI – und einmal täglich im Hintergrund,
+  mit einer Meldung, wenn sich ein Eintrag ändert oder ein neues Problem auftaucht
 - **Empfehlung zur Richtlinie:** wann ein Wechsel auf `p=quarantine` oder `p=reject` sicher ist
   und was vorher zu klären ist
 - **Eine Seite je sendender IP** mit Verlauf und allen Einträgen, dazu eine Suche über
