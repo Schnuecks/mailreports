@@ -4,8 +4,13 @@
 {% block content %}
 <div class="page-head">
   <h1><code class="plain">{{ ip }}</code></h1>
-  {{ m.periods_switch(days, periods) }}
+  <div class="actions-row">
+    {% if is_admin %}{% if row and row.source and row.source.id %}<a class="btn ghost" href="/known-sources/{{ row.source.id }}?ip={{ ip|urlencode }}">{{ _("Eintrag bearbeiten") }}</a>
+    {% elif not (row and row.source) %}<a class="btn ghost" href="/known-sources/new?ip={{ ip|urlencode }}">{{ _("Als bekannten Absender eintragen") }}</a>{% endif %}{% endif %}
+    {{ m.periods_switch(days, periods) }}
+  </div>
 </div>
+{% if saved %}<div class="notice ok" role="status">{{ _("Bekannter Absender gespeichert.") }}</div>{% endif %}
 
 <div class="grid stats">
   <div class="card stat"><span class="lbl">{{ _("Einordnung") }}</span><strong class="small">{{ m.kind_badge(row.kind if row else "unknown", row.source if row else None) }}</strong>

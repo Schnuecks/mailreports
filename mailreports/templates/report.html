@@ -58,6 +58,7 @@
     <dt>{{ _("Berichtet von") }}</dt><dd>{{ rep.org_name }}{% if rep.org_email %} &lt;{{ rep.org_email }}&gt;{% endif %}</dd>
     <dt>{{ _("Bericht-ID") }}</dt><dd><code>{{ rep.report_id }}</code></dd>
     <dt>{{ _("Eingegangen") }}</dt><dd>{{ fmt.datetime(rep.received_at) }}</dd>
+    {% if rep.mail_sender %}<dt>{{ _("Absender der E-Mail") }}</dt><dd>{{ rep.mail_sender }}</dd>{% endif %}
     {% if has_raw %}<dt>{{ _("Original") }}</dt><dd><a href="/reports/{{ rep.id }}/raw">{{ _("XML herunterladen") }}</a></dd>{% endif %}
     {% for e in loads(rep.errors) %}<dt>{{ _("Hinweis des Empfängers") }}</dt><dd>{{ e }}</dd>{% endfor %}
   </dl>

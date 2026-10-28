@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ _("Bekannter Absender") }}{% endblock %}
+{% macro value_of(name) -%}
+  {%- if name in values %}{{ values[name] }}{% elif src %}{% set v = src[name] %}{{ v|join(", ") if v is not string and v is iterable else v }}{% endif -%}
+{%- endmacro %}
+{% macro input(name, label, hint="", placeholder="") -%}
+  <label{% if error_field == name %} class="invalid"{% endif %}>{{ label }}
+    <input name="{{ name }}" value="{{ value_of(name) }}" placeholder="{{ placeholder }}" {% if error_field == name %}aria-invalid="true"{% endif %}>
+    {% if hint %}<small class="muted">{{ hint }}</small>{% endif %}
+  </label>
+{%- endmacro %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("Bekannten Absender bearbeiten") if src and src.id else _("Bekannten Absender eintragen") }}</h1>
+  <a class="btn ghost" href="/sources">← {{ _("Absender") }}</a>
+</div>
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+<div class="grid two">
+<section class="card">
+  <h2>{{ _("Angaben") }}</h2>
+  <form method="post" action="/known-sources{% if src and src.id %}/{{ src.id }}{% endif %}" class="stack-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if ip %}<input type="hidden" name="from_ip" value="{{ ip }}">{% endif %}
+    {{ input("name", _("Name"), placeholder=_("z. B. Newsletter-Dienst")) }}
+    {% set kind = values.kind if "kind" in values else (src.kind if src else "relay") %}
+    <label>{{ _("Art") }}
+      <select name="kind">
+        {% for k in ("own", "relay", "forwarder") %}<option value="{{ k }}" {% if kind == k %}selected{% endif %}>{{ ex.kind_label(k) }}</option>{% endfor %}
+      </select>
+    </label>
+    <p class="muted">{{ _("Ein Absender gilt als bekannt, sobald eines der Merkmale passt. Mehrere Werte mit Komma trennen.") }}</p>
+    {{ input("ips", _("IP-Adressen oder Netze"), placeholder="192.0.2.10, 198.51.100.0/24") }}
+    {{ input("ptr", _("Rechnernamen"), _("Ein Punkt am Anfang steht für alle Namen mit dieser Endung, z. B. .mail.example.net"), ".mail.example.net") }}
+    {{ input("asn", _("AS-Nummern"), _("Alle Adressen dieses Netzbetreibers; nur bei Diensten mit eigenem Netz sinnvoll."), "64500") }}
+    {{ input("dkim_selectors", _("DKIM-Selektoren"), _("Passt bei einer gültigen DKIM-Signatur mit diesem Selektor."), "s1, s2") }}
+    {{ input("dkim_domains", _("Nur für DKIM-Domains (optional)"), _("Schränkt die Selektoren auf Signaturen dieser Domains ein."), "example.org") }}
+    {{ input("note", _("Notiz (optional)")) }}
+    <button class="btn">{{ _("Speichern") }}</button>
+  </form>
+  {% if src and src.id %}
+  <form method="post" action="/known-sources/{{ src.id }}/delete" class="danger-zone">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn ghost danger">{{ _("Eintrag löschen") }}</button>
+  </form>
+  {% endif %}
+</section>
+{% if ip %}
+<section class="card">
+  <h2>{{ _("Gesehen bei {ip}", ip=ip) }}</h2>
+  <dl class="kv">
+    <dt>{{ _("Rechnername") }}</dt><dd>{% if info and info.ptr %}<code>{{ info.ptr }}</code>{% if info.ptr_confirmed %} ✓{% endif %}{% else %}–{% endif %}</dd>
+    <dt>{{ _("Netzbetreiber") }}</dt><dd>{% if info and info.asn %}AS{{ info.asn }}{% if info.as_org %} · {{ info.as_org }}{% endif %}{% else %}–{% endif %}</dd>
+    <dt>{{ _("DKIM-Selektoren") }}</dt><dd>{{ row.selectors|sort|join(", ") if row and row.selectors else "–" }}</dd>
+    <dt>{{ _("Absender-Domains") }}</dt><dd>{{ row.header_from|sort|join(", ") if row and row.header_from else "–" }}</dd>
+  </dl>
+  <p class="muted">{{ _("Nur die IP-Adresse ist vorausgefüllt. Ein Rechnername oder Selektor erfasst auch weitere Server desselben Dienstes, passt aber nur, wenn er wirklich nur zu diesem Dienst gehört.") }}</p>
+</section>
+{% endif %}
+</div>
+{% endblock %}

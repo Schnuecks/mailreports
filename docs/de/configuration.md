@@ -58,12 +58,15 @@ gespeichert (ohne ihn unverschlüsselt).
 | `NOTIFY_COOLDOWN_HOURS` | 24 | Derselbe Fund wird höchstens einmal in dieser Zeit gemeldet |
 | `DIGEST` | `off` | `weekly`: Zusammenfassung der letzten 7 Tage an alle Kanäle |
 | `DIGEST_WEEKDAY` | `mon` | Tag der Zusammenfassung (`mon` … `sun`), versendet ab 8 Uhr Ortszeit |
+| `DNS_WATCH` | `on` | `off`: keine tägliche DNS-Prüfung der Domains (geänderte Einträge und neue Probleme) |
 | `BASE_URL` | `PUBLIC_URL` | Öffentliche Adresse, wird als Link an die Nachrichten gehängt; nur nötig, wenn sie von `PUBLIC_URL` abweicht |
 
 Nach einem Abruf geht eine Meldung raus, wenn neue Berichte Mails enthalten, die DMARC
 verfehlt haben (außer erkannten Weiterleitungen), Absender, die bestanden haben, aber nicht
 in `sources.toml` stehen, oder TLS-Fehler. Ein Fund ist durch Domain und IP bestimmt (bzw.
-Domain und TLS-Fehlertyp).
+Domain und TLS-Fehlertyp). Die tägliche DNS-Prüfung schickt eine eigene Meldung, wenn sich ein
+Eintrag geändert hat oder ein neues Problem auftritt; der Webhook erhält dann `dns_changes` statt
+`findings`.
 
 ## Anmeldung und Konten
 
@@ -150,8 +153,9 @@ IP-Daten werden zwischengespeichert und nach 30 Tagen erneuert.
 
 ## Bekannte Absender (sources.toml)
 
-Ohne diese Datei ist jeder Absender „unbekannt“. Trage deinen eigenen Server und jeden
-Dienst ein, der in deinem Namen Mails verschickt:
+Ohne bekannte Absender ist jeder Absender „unbekannt“. Admins können sie in der App eintragen
+(siehe [Bedienung](usage.md#bekannten-absender-in-der-app-eintragen)) oder in dieser Datei
+beschreiben – deinen eigenen Server und jeden Dienst, der in deinem Namen Mails verschickt:
 
 ```toml
 [[source]]
@@ -185,6 +189,7 @@ asn = [64500]
 | `dkim_domains` | Schränkt `dkim_selectors` optional auf diese Signatur-Domains ein |
 | `note` | Freitext neben dem Namen |
 
-Zuerst werden IP-, PTR- und AS-Regeln geprüft, dann DKIM-Selektoren. Einträge, auf die nichts
+Einträge aus der App kommen nach denen aus der Datei. Zuerst werden IP-, PTR- und AS-Regeln
+geprüft, dann DKIM-Selektoren. Einträge, auf die nichts
 passt, die aber noch eine gültige DKIM-Signatur haben, während SPF fehlschlug, gelten als
 wahrscheinliche Weiterleitung.

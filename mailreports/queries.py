@@ -214,7 +214,9 @@ def list_reports(db: Database, days: int, domain: str = "", org: str = "", faile
 
 def report_detail(db: Database, report_id: int):
     with db.connect() as con:
-        rep = con.execute("SELECT * FROM dmarc_reports WHERE id = ?", (report_id,)).fetchone()
+        rep = con.execute("""SELECT d.*, m.sender AS mail_sender, m.subject AS mail_subject
+                             FROM dmarc_reports d LEFT JOIN mails m ON m.id = d.mail_id WHERE d.id = ?""",
+                          (report_id,)).fetchone()
         if not rep:
             return None, []
         records = con.execute(
@@ -287,7 +289,9 @@ def list_tls(db: Database, days: int, domain: str = "", failed_only: bool = Fals
 
 def tls_detail(db: Database, report_id: int):
     with db.connect() as con:
-        rep = con.execute("SELECT * FROM tls_reports WHERE id = ?", (report_id,)).fetchone()
+        rep = con.execute("""SELECT t.*, m.sender AS mail_sender, m.subject AS mail_subject
+                             FROM tls_reports t LEFT JOIN mails m ON m.id = t.mail_id WHERE t.id = ?""",
+                          (report_id,)).fetchone()
         if not rep:
             return None, []
         policies = [dict(p) for p in con.execute(

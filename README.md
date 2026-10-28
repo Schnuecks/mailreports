@@ -31,11 +31,12 @@ XML and result codes.
   TLS failure type, with what to do about it
 - **Sender classification:** your own server, authorised services (for example by their DKIM
   selector), forwarders and unknown senders, with reverse DNS and optional GeoIP and network
-  (AS) data
+  (AS) data; known senders are added in the app with one click from an unknown IP or in a file
 - **Report details** with every DKIM signature and selector, the SPF check, Header From and
   Envelope From; the original file as download and all records as CSV export
 - **DNS check** of your domains: DMARC, SPF (incl. the 10-lookup limit), DKIM key lengths,
-  MTA-STS, TLS-RPT, MX and DANE
+  MTA-STS, TLS-RPT, MX and DANE, BIMI – and once a day in the background, with a message when a
+  record changes or a new problem appears
 - **Policy recommendation:** when it is safe to move to `p=quarantine` or `p=reject`, and
   what to fix first
 - **A page per sending IP** with history and all records, and a search across IP addresses,

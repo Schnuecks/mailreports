@@ -56,11 +56,14 @@ passwords entered in the app are stored encrypted with `SECRET_KEY` (without it,
 | `NOTIFY_COOLDOWN_HOURS` | 24 | The same finding is reported at most once in this time |
 | `DIGEST` | `off` | `weekly`: a summary of the last 7 days to all channels |
 | `DIGEST_WEEKDAY` | `mon` | Day of the summary (`mon` … `sun`), sent after 8:00 local time |
+| `DNS_WATCH` | `on` | `off`: no daily DNS check of the domains (changed records and new problems) |
 | `BASE_URL` | `PUBLIC_URL` | Public address, added as a link to the messages; only needed if it differs from `PUBLIC_URL` |
 
 A message is sent after a fetch when new reports contain emails that failed DMARC (except
 recognised forwarding), senders that passed but are not in `sources.toml`, or TLS failures.
-A finding is identified by domain and IP (or domain and TLS failure type).
+A finding is identified by domain and IP (or domain and TLS failure type). The daily DNS check
+sends its own message when a record changed or a new problem appeared; the webhook then
+receives `dns_changes` instead of `findings`.
 
 ## Sign-in and accounts
 
@@ -144,8 +147,9 @@ IP data is cached and refreshed after 30 days.
 
 ## Known senders (sources.toml)
 
-Without this file every sender is "unknown". Describe your own server and every service
-that sends mail in your name:
+Without known senders every sender is "unknown". Admins can add them in the app (see
+[Usage](usage.md#adding-a-known-sender-in-the-app)) or describe them in this file – your own
+server and every service that sends mail in your name:
 
 ```toml
 [[source]]
@@ -179,5 +183,6 @@ asn = [64500]
 | `dkim_domains` | Optionally limits `dkim_selectors` to these signing domains |
 | `note` | Free text shown next to the name |
 
-IP, PTR and AS rules are checked first, then DKIM selectors. Records that match nothing but
+Entries from the app are used after the ones from the file. IP, PTR and AS rules are checked
+first, then DKIM selectors. Records that match nothing but
 still have a valid DKIM signature while SPF failed are shown as probable forwarding.

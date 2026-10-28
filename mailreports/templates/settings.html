@@ -87,6 +87,7 @@
       {{ field("notify_cooldown_hours", _("Dieselbe Auffälligkeit höchstens alle … Stunden melden"), "number") }}
       {{ select("digest", _("Wochenübersicht"), [("off", _("aus")), ("weekly", _("wöchentlich"))]) }}
       {{ select("digest_weekday", _("Wochentag"), [(0, _("Montag")), (1, _("Dienstag")), (2, _("Mittwoch")), (3, _("Donnerstag")), (4, _("Freitag")), (5, _("Samstag")), (6, _("Sonntag"))]) }}
+      {{ select("dns_watch", _("DNS-Einträge täglich prüfen"), [("on", _("an")), ("off", _("aus"))]) }}
     </div>
   </section>
   <div class="actions-row">

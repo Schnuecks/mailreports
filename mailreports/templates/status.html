@@ -34,7 +34,7 @@
   <dl class="kv">
     <dt>GeoIP</dt><dd>{% if geo.available %}{{ _("aktiv") }}{% if not geo.asn %} – {{ _("ohne AS-Daten (GeoLite2-ASN.mmdb fehlt)") }}{% endif %}{% else %}{{ _("aus") }}{% endif %}</dd>
     <dt>{{ _("Reverse DNS") }}</dt><dd>{{ _("aktiv") if settings.dns_lookups else _("aus") }}</dd>
-    <dt>{{ _("Bekannte Quellen") }}</dt><dd>{{ sources|length }}{% if settings.sources_file %} <small title="{{ settings.sources_file }}">({{ sources_name }})</small>{% endif %}</dd>
+    <dt>{{ _("Bekannte Quellen") }}</dt><dd>{{ sources|length }}{% set in_app = sources|selectattr("id")|list|length %}{% if settings.sources_file or in_app %} <small{% if settings.sources_file %} title="{{ settings.sources_file }}"{% endif %}>({% if settings.sources_file %}{{ sources_name }}: {{ sources|length - in_app }}{% if in_app %}, {% endif %}{% endif %}{% if in_app %}{{ _("App") }}: {{ in_app }}{% endif %})</small>{% endif %}</dd>
     <dt>{{ _("Benachrichtigungen") }}</dt><dd>{% set ch = [] %}{% if settings.pushover_enabled %}{% set _x = ch.append("Pushover") %}{% endif %}{% if settings.ntfy_url %}{% set _x = ch.append("ntfy") %}{% endif %}{% if settings.webhook_url %}{% set _x = ch.append("Webhook") %}{% endif %}{% if settings.email_enabled %}{% set _x = ch.append(_("E-Mail")) %}{% endif %}
       {% if ch %}{{ ch|join(", ") }} · {{ _("höchstens alle {h} Stunden pro Fund", h=settings.notify_cooldown_hours) }}{% else %}{{ _("aus") }}{% endif %}</dd>
     <dt>{{ _("Wochenübersicht") }}</dt><dd>{{ _("aktiv") if settings.digest == "weekly" and settings.notify_enabled else _("aus") }}</dd>

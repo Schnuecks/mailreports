@@ -218,6 +218,34 @@ CREATE TABLE IF NOT EXISTS notifications (
     key TEXT PRIMARY KEY,
     last_sent INTEGER NOT NULL
 );
+
+-- Known senders added in the app (in addition to sources.toml)
+CREATE TABLE IF NOT EXISTS known_sources (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    ips TEXT NOT NULL DEFAULT '[]',
+    ptr TEXT NOT NULL DEFAULT '[]',
+    asn TEXT NOT NULL DEFAULT '[]',
+    dkim_selectors TEXT NOT NULL DEFAULT '[]',
+    dkim_domains TEXT NOT NULL DEFAULT '[]',
+    note TEXT NOT NULL DEFAULT '',
+    created_by TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Changes found by the daily DNS check
+CREATE TABLE IF NOT EXISTS dns_changes (
+    id INTEGER PRIMARY KEY,
+    domain TEXT NOT NULL,
+    section TEXT NOT NULL,
+    kind TEXT NOT NULL,            -- record, problem, resolved
+    old TEXT NOT NULL DEFAULT '',
+    new TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS dns_changes_domain ON dns_changes (domain, created_at);
 """
 
 _lock = threading.Lock()
@@ -350,6 +378,7 @@ class Database:
                             (kind,))
             con.execute("DELETE FROM mails WHERE processed_at < ?", (now - 180 * 86400,))
             con.execute("DELETE FROM login_events WHERE created_at < ?", (now - 365 * 86400,))
+            con.execute("DELETE FROM dns_changes WHERE created_at < ?", (now - 365 * 86400,))
             con.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
             con.execute("DELETE FROM pending_logins WHERE expires_at < ?", (now,))
             con.execute("DELETE FROM webauthn_challenges WHERE expires_at < ?", (now,))

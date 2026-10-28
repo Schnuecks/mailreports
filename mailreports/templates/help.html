@@ -39,10 +39,10 @@
 <section class="card">
   <h2>{{ _("Einordnung der Absender") }}</h2>
   <dl class="kv">
-    <dt>{{ ex.kind_label("own") }}</dt><dd>{{ _("Der eigene Mailserver, erkannt an IP-Adresse, Reverse-DNS oder AS-Nummer aus sources.toml.") }}</dd>
+    <dt>{{ ex.kind_label("own") }}</dt><dd>{{ _("Der eigene Mailserver, erkannt an IP-Adresse, Reverse-DNS oder AS-Nummer aus den bekannten Absendern.") }}</dd>
     <dt>{{ ex.kind_label("relay") }}</dt><dd>{{ _("Ein Dienst, der im Auftrag der Domain sendet (Newsletter, Relay, Ticketsystem), zum Beispiel an seinem DKIM-Selektor erkannt.") }}</dd>
     <dt>{{ ex.kind_label("forwarder") }}</dt><dd>{{ _("Ein fremder Server, der eine legitime E-Mail weitergeleitet hat. Erkennbar daran, dass DKIM gültig ist, SPF aber nicht.") }}</dd>
-    <dt>{{ ex.kind_label("unknown") }}</dt><dd>{{ _("Alle übrigen Quellen. Besteht eine solche Quelle DMARC, fehlt sie vermutlich in sources.toml. Besteht sie DMARC nicht, handelt es sich meist um einen Missbrauchsversuch, den DMARC abgewehrt hat.") }}</dd>
+    <dt>{{ ex.kind_label("unknown") }}</dt><dd>{{ _("Alle übrigen Quellen. Besteht eine solche Quelle DMARC, fehlt sie vermutlich bei den bekannten Absendern. Besteht sie DMARC nicht, handelt es sich meist um einen Missbrauchsversuch, den DMARC abgewehrt hat.") }}</dd>
   </dl>
 </section>
 <section class="card">

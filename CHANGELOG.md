@@ -2,6 +2,21 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.0
+
+- **Known senders in the app:** admins add a sender with one click from the page of an
+  unknown IP address, with the same criteria as `sources.toml` (addresses or networks, host
+  names, AS numbers, DKIM selectors). The form shows what the reports say about the IP. Entries
+  take effect immediately and can be changed or deleted under "Known sources"; entries from
+  `sources.toml` keep working unchanged. Networks wider than /16 (IPv4) or /32 (IPv6) are refused
+- **Daily DNS check:** the records of every domain are checked once a day. Changed, new or
+  removed records and new warnings or errors are listed on the DNS page under "Recent changes"
+  and sent to the notification channels (webhook: `dns_changes`). Turn it off in the settings
+  or with `DNS_WATCH=off`
+- **BIMI** in the DNS check: address and format of the logo, certificate, and whether the DMARC
+  policy is strict enough for it
+- The report pages show the sender of the email that brought the report
+
 ## 1.0.2
 
 - **Security:** the image no longer contains pip. It is only needed during the build, and the

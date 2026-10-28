@@ -17,7 +17,17 @@ Die Domain-Seite hat die Schaltfläche **DNS prüfen**. Sie fragt die aktuell ve
 Einträge ab und weist auf Probleme hin: DMARC-Eintrag (Richtlinie, Berichtsadresse und deren
 Freigabe bei einer fremden Domain), SPF (abschließendes `all`, Grenze von 10 DNS-Abfragen), jeder
 in den Berichten gesehene DKIM-Selektor mit Schlüssellänge, MX mit DANE/TLSA, MTA-STS (Modus und
-ob jeder MX in der Richtlinie steht) und TLS-RPT. Ergebnisse werden 10 Minuten zwischengespeichert.
+ob jeder MX in der Richtlinie steht), TLS-RPT und BIMI (Markenlogo: HTTPS-Adresse eines SVG-Logos,
+Zertifikat und eine ausreichend strenge DMARC-Richtlinie). Ergebnisse werden 10 Minuten
+zwischengespeichert.
+
+Zusätzlich prüft mailreports die Einträge jeder Domain **einmal am Tag** im Hintergrund. Ein
+geänderter, neuer oder entfernter Eintrag (DMARC, SPF, MX, MTA-STS, TLS-RPT, BIMI) und eine neue
+Warnung oder ein neuer Fehler erscheinen auf der DNS-Seite unter **Letzte Änderungen** und gehen an
+die Benachrichtigungskanäle. Behobene Probleme werden ebenfalls aufgeführt, lösen allein aber keine
+Meldung aus. Die erste Prüfung hält nur den aktuellen Stand fest; ist DNS nicht erreichbar, fällt
+die Prüfung für diesen Tag aus. Abschalten lässt sie sich unter **Einstellungen** oder mit
+`DNS_WATCH=off`.
 
 Die Karte **Empfehlung** wertet die letzten 30 Tage aus: Bestehen alle bekannten Quellen DMARC und
 besteht keine unbekannte Quelle, schlägt sie die nächststrengere Richtlinie vor (`p=none` →
@@ -47,12 +57,12 @@ Alle sendenden IPs des Zeitraums mit ihrer Einordnung:
 
 | Einordnung | Bedeutung |
 |---|---|
-| Eigener Server | passt zu einem `own`-Eintrag in `sources.toml` |
+| Eigener Server | passt zu einem `own`-Eintrag |
 | Beauftragter Dienst | passt zu einem `relay`-Eintrag, z. B. über den DKIM-Selektor |
 | Weiterleitung | ein `forwarder`-Eintrag, ein Weiterleitungs-Hinweis im Bericht oder gültiges DKIM bei fehlgeschlagenem SPF |
 | Unbekannt | alles andere |
 
-Bekannte Quellen erscheinen mit ihrem Namen aus `sources.toml`; mit der Maus darüber zeigt sich die Art.
+Bekannte Quellen erscheinen mit ihrem Namen; mit der Maus darüber zeigt sich die Art.
 
 Jede IP-Adresse führt zu einer eigenen Seite mit Verlauf, Einordnung, Reverse-DNS, Land und Netz
 und allen ihren Einträgen. Das Suchfeld oben findet IP-Adressen, Hostnamen, Domains, berichtende
@@ -61,7 +71,21 @@ Organisationen, Bericht-IDs und DKIM-Selektoren.
 Ein **unbekannter Absender, der DMARC besteht**, ist meist ein Dienst, den du noch nicht
 eingetragen hast. Ein **unbekannter Absender, der durchfällt**, ist meist jemand, der deine
 Domain missbrauchen will – genau das hat DMARC verhindert. Der Abschnitt **Bekannte
-Quellen** unten zeigt, was die App aus `sources.toml` gelesen hat.
+Quellen** unten zeigt alle Einträge aus `sources.toml` und aus der App.
+
+### Bekannten Absender in der App eintragen
+
+Admins finden auf der Seite einer unbekannten IP-Adresse die Schaltfläche **Als bekannten
+Absender eintragen**. Das Formular kennt dieselben Merkmale wie `sources.toml` – Adressen oder
+Netze, Rechnernamen, AS-Nummern und DKIM-Selektoren – und zeigt daneben, was die Berichte über
+diese IP sagen (Rechnername, Netzbetreiber, Selektoren, Domains). Vorausgefüllt ist nur die
+IP-Adresse: Ein Rechnername oder Selektor erfasst auch weitere Server desselben Dienstes, passt
+aber nur, wenn er wirklich nur zu diesem Dienst gehört. Netze größer als /16 (IPv4) oder /32
+(IPv6) werden abgelehnt.
+
+Einträge aus der App liegen in der Datenbank und gelten sofort, ohne Neustart. Unter **Bekannte
+Quellen** (Spalte „Eingetragen in“) lassen sie sich ändern oder löschen. Einträge aus
+`sources.toml` bleiben in der App schreibgeschützt; beide gelten zusammen, die Datei zuerst.
 
 ## TLS-Berichte
 
@@ -80,7 +104,7 @@ eine Mail keinen verwertbaren Bericht enthielt.
 ## Einstellungen
 
 Admins richten hier die Benachrichtigungen ein: Pushover, ntfy, Webhook und E-Mail, wie oft
-derselbe Fund gemeldet werden darf und die Wochenübersicht. **Speichern und Testnachricht
+derselbe Fund gemeldet werden darf, die Wochenübersicht und die tägliche DNS-Prüfung. **Speichern und Testnachricht
 senden** prüft die Kanäle sofort und zeigt das Ergebnis je Kanal. Ein leeres Passwortfeld behält
 den gespeicherten Wert, **entfernen** löscht ihn. Über Umgebungsvariablen gesetzte Felder
 erscheinen als festgelegt.
