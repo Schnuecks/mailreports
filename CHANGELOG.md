@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.1
+
+- **Security updates in the image:** the image now installs the Debian security updates that the base image does not contain yet. This fixes two vulnerabilities in zlib (CVE-2026-76844, CVE-2026-85091) and one in apt (CVE-2026-109518) that the weekly image scan reported.
+- Newer base image (Python 3.15.2).
+
 ## 1.1.0
 
 - **Known senders in the app:** admins add a sender with one click from the page of an
