@@ -15,6 +15,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv
 COPY requirements.txt .
+# Security fixes Debian has published since the base image was built (e.g. zlib)
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 # pip is only needed for the build; removing it also drops the libraries it bundles
 RUN pip install --no-cache-dir -r requirements.txt \
  && pip uninstall --yes pip \
